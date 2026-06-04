@@ -1,0 +1,48 @@
+import { Queue, type ConnectionOptions } from "bullmq";
+import redisClient from "../config/redis";
+import { getSLABreachDelay, getSLAWarningDelay } from "../services/slaService";
+
+interface SLAJobData {
+  complaintId: string;
+  type: "sla_warning" | "sla_breach";
+}
+
+const bullConnection = redisClient as unknown as ConnectionOptions;
+
+export const slaQueue =
+  redisClient.isConnected === false
+    ? null
+    : new Queue<SLAJobData, void, "sla_warning" | "sla_breach">("sla-checks", {
+        connection: bullConnection,
+      });
+
+if (redisClient.isConnected === false) {
+  console.warn("SLA queue disabled - Redis not available");
+}
+
+export async function addSLAJob(complaintId: string, category: string): Promise<void> {
+  if (!slaQueue) {
+    console.log(`[SLA MOCK] Would schedule SLA jobs for complaint ${complaintId}`);
+    return;
+  }
+
+  const warningDelay = getSLAWarningDelay(category);
+  const breachDelay = getSLABreachDelay(category);
+
+  await slaQueue.add(
+    "sla_warning",
+    { complaintId, type: "sla_warning" },
+    { delay: warningDelay, jobId: `warning_${complaintId}` }
+  );
+  await slaQueue.add(
+    "sla_breach",
+    { complaintId, type: "sla_breach" },
+    { delay: breachDelay, jobId: `breach_${complaintId}` }
+  );
+
+  console.log(
+    `SLA jobs scheduled for complaint ${complaintId} - warning in ${
+      warningDelay / 3600000
+    }h, breach in ${breachDelay / 3600000}h`
+  );
+}
