@@ -184,204 +184,174 @@ export default function AuthorityDashboard() {
         </div>
       )}
 
-      {/* Header Row */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4 gap-4">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between border-b pb-4 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Authority Dashboard</h1>
-          <p className="text-sm text-gray-500">Solve local complaints &amp; manage ward SLA targets</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Authority Dashboard
+          </h1>
+          <p className="text-sm text-gray-500">
+            Welcome, {storeUser?.name || clerkUser.fullName} &mdash; {storeUser?.ward?.name && `Ward: ${storeUser.ward.name}`}
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-          {storeUser?.ward && (
-            <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary text-xs font-semibold py-1.5 px-3 rounded-full">
-              Ward: {storeUser.ward.name}
-            </Badge>
+        <div className="flex items-center gap-3">
+          {currentTime && (
+            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full uppercase tracking-widest">
+              {currentTime}
+            </span>
           )}
-          <span className="text-xs font-bold uppercase tracking-widest text-gray-500 bg-gray-100 px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
-            <ClockIcon className="size-3.5" />
-            {currentTime}
-          </span>
+          <Button
+            size="sm"
+            onClick={() => router.push("/complaints")}
+            className="font-bold text-xs uppercase tracking-wider"
+          >
+            <ClipboardList className="size-4 mr-1.5" />
+            View All
+          </Button>
         </div>
       </header>
 
-      {/* SLA Breach Alert Banner */}
-      {stats.breached > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 animate-pulse">
-          <div className="flex items-start gap-2.5">
-            <AlertTriangle className="size-5 shrink-0 text-red-600 mt-0.5" />
-            <div className="text-xs font-semibold leading-relaxed">
-              ⚠️ {stats.breached} complaint(s) have breached SLA deadline — Immediate action required!
-            </div>
-          </div>
-          <Button
-            size="xs"
-            variant="destructive"
-            onClick={() => setFilterBreachedOnly((prev) => !prev)}
-            className="text-[10px] font-bold uppercase tracking-widest self-start sm:self-auto h-7 whitespace-nowrap"
-          >
-            {filterBreachedOnly ? "Show All Issues" : "View Breached Complaints"}
-          </Button>
-        </div>
-      )}
-
-      {/* Stats Cards Row */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white border border-gray-100 shadow-sm hover:shadow transition-shadow">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Total in Ward</span>
-              <span className="text-2xl font-extrabold text-gray-900">{stats.total}</span>
-            </div>
-            <div className="h-10 w-10 bg-blue-50 text-blue-600 flex items-center justify-center rounded-lg">
-              <ClipboardList className="size-5" />
-            </div>
+      {/* Stats Grid */}
+      <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card className="bg-white border border-gray-100 shadow-sm text-center py-4 cursor-pointer hover:border-blue-300" onClick={() => router.push("/complaints")}>
+          <CardContent className="p-0">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Total</span>
+            <span className="text-2xl font-extrabold text-gray-900 mt-1 block">{loading ? <Skeleton className="h-7 w-12 mx-auto" /> : stats.total}</span>
           </CardContent>
         </Card>
 
-        <Card
-          className={`bg-white border shadow-sm hover:shadow transition-shadow ${
-            stats.pending > 5 ? "border-red-200 bg-red-50/10" : "border-gray-100"
-          }`}
-        >
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Pending</span>
-              <span className="text-2xl font-extrabold text-gray-900">{stats.pending}</span>
-            </div>
-            <div className="h-10 w-10 bg-red-50 text-red-600 flex items-center justify-center rounded-lg">
-              <ClockIcon className="size-5" />
-            </div>
+        <Card className="bg-white border border-gray-100 shadow-sm text-center py-4">
+          <CardContent className="p-0">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Pending</span>
+            <span className="text-2xl font-extrabold text-red-600 mt-1 block">{loading ? <Skeleton className="h-7 w-12 mx-auto" /> : stats.pending}</span>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-gray-100 shadow-sm hover:shadow transition-shadow">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">In Progress</span>
-              <span className="text-2xl font-extrabold text-gray-900">{stats.inProgress}</span>
-            </div>
-            <div className="h-10 w-10 bg-orange-50 text-orange-600 flex items-center justify-center rounded-lg">
-              <Activity className="size-5" />
-            </div>
+        <Card className="bg-white border border-gray-100 shadow-sm text-center py-4">
+          <CardContent className="p-0">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">In Progress</span>
+            <span className="text-2xl font-extrabold text-orange-500 mt-1 block">{loading ? <Skeleton className="h-7 w-12 mx-auto" /> : stats.inProgress}</span>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-gray-100 shadow-sm hover:shadow transition-shadow">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Resolved Today</span>
-              <span className="text-2xl font-extrabold text-gray-900">{stats.resolvedToday}</span>
-            </div>
-            <div className="h-10 w-10 bg-green-50 text-green-600 flex items-center justify-center rounded-lg">
-              <CheckCircle className="size-5" />
-            </div>
+        <Card className="bg-white border border-gray-100 shadow-sm text-center py-4">
+          <CardContent className="p-0">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Resolved Today</span>
+            <span className="text-2xl font-extrabold text-green-600 mt-1 block">{loading ? <Skeleton className="h-7 w-12 mx-auto" /> : stats.resolvedToday}</span>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border border-red-100 shadow-sm text-center py-4">
+          <CardContent className="p-0">
+            <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">SLA Breached</span>
+            <span className="text-2xl font-extrabold text-red-600 mt-1 block">{loading ? <Skeleton className="h-7 w-12 mx-auto" /> : stats.breached}</span>
           </CardContent>
         </Card>
       </section>
 
-      {/* Priority Queue Section */}
-      <section className="space-y-4">
-        <header className="border-b pb-2">
-          <h2 className="text-lg font-bold text-gray-900">
-            Priority Queue — Action Required
-          </h2>
-          <p className="text-xs text-gray-500">Sorted by priority score. Highest urgency first.</p>
-        </header>
+      {/* Priority Queue */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">Priority Queue</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFilterBreachedOnly((prev) => !prev)}
+              className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 border rounded-none transition ${
+                filterBreachedOnly
+                  ? "bg-red-600 text-white border-red-600"
+                  : "bg-white text-gray-600 border-gray-300 hover:bg-red-50"
+              }`}
+            >
+              {filterBreachedOnly ? "Showing: Breached Only" : "Filter: Breached Only"}
+            </button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/complaints")}
+              className="text-[10px] font-bold uppercase tracking-wider"
+            >
+              Full Queue
+            </Button>
+          </div>
+        </div>
 
         {loading ? (
-          /* Skeletons */
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              <Skeleton key={i} className="h-16 w-full" />
             ))}
           </div>
-        ) : queueComplaints.length === 0 ? (
-          <Card className="p-8 text-center border-dashed border bg-white max-w-sm mx-auto">
-            <CardContent className="space-y-2 pt-0">
-              <CheckCircle className="size-10 text-green-500 mx-auto" />
-              <h3 className="text-sm font-bold text-gray-900">Queue is Clear!</h3>
-              <p className="text-xs text-gray-500">No unresolved complaints pending in this ward.</p>
-            </CardContent>
-          </Card>
+        ) : visibleQueue.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 font-semibold border border-dashed">
+            {filterBreachedOnly ? "No SLA-breached complaints found." : "All caught up! No active complaints."}
+          </div>
         ) : (
           <div className="space-y-2">
-            {visibleQueue.map((c) => {
+            {visibleQueue.map((c, index) => {
               const slaLeft = getSLATimeLeft(c.sla.deadline)
-              
+              const isBreached = c.sla?.breached
+
               return (
-                <Card
+                <div
                   key={c._id}
-                  className="bg-white border border-gray-200/60 p-4 hover:shadow-sm transition"
+                  onClick={() => router.push(`/complaints/${c._id}`)}
+                  className={`flex items-center gap-4 p-3 border cursor-pointer hover:shadow-sm transition ${
+                    isBreached ? "bg-red-50/60 border-red-200" : "bg-white border-gray-200/60"
+                  }`}
                 >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    {/* Left Priority Indicator */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className={`h-3.5 w-3.5 rounded-full shrink-0 ${getPriorityColorIndicator(c.priority)}`} />
-                      <span className={`text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 border bg-white ${getPriorityColor(c.priority)}`}>
-                        {c.priority}
-                      </span>
-                    </div>
+                  {/* Queue rank */}
+                  <span className="text-[10px] font-bold text-gray-400 w-5 shrink-0 text-center">{index + 1}</span>
 
-                    {/* Middle Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-semibold text-gray-900 truncate">{c.title}</h4>
-                        <Badge variant="outline" className="text-[9px] px-1.5 border-gray-300 text-gray-500 uppercase shrink-0">
-                          {getCategoryLabel(c.category)}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 flex-wrap">
-                        <span className="truncate">{c.location.address}</span>
-                        <span className="shrink-0 flex items-center gap-0.5">
-                          <ThumbsUp className="size-3 text-gray-400" />
-                          {c.upvoteCount} upvotes
-                        </span>
-                      </div>
-                    </div>
+                  {/* Priority indicator */}
+                  <div className={`h-8 w-1 shrink-0 ${getPriorityColorIndicator(c.priority)}`} />
 
-                    {/* SLA Chip (Right of Middle) */}
-                    <div className="shrink-0 self-start sm:self-auto pt-2 sm:pt-0">
-                      {c.sla?.breached ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-2.5 py-1 bg-red-600 text-white animate-pulse">
-                          BREACHED
-                        </span>
-                      ) : slaLeft.percentage > 80 ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-2.5 py-1 bg-red-100 text-red-700 border border-red-200">
-                          {slaLeft.hours}h left
-                        </span>
-                      ) : slaLeft.percentage > 60 ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-2.5 py-1 bg-orange-100 text-orange-700 border border-orange-200">
-                          {slaLeft.hours}h left
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-2.5 py-1 bg-green-100 text-green-700 border border-green-200">
-                          {slaLeft.hours}h left
-                        </span>
-                      )}
+                  {/* Main info */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-gray-900 truncate">{c.title}</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-semibold text-gray-500 uppercase">{getCategoryLabel(c.category)}</span>
+                      <span className={`text-[10px] font-bold uppercase ${getPriorityColor(c.priority)}`}>{c.priority}</span>
                     </div>
-
-                    {/* View and Act Button */}
-                    <Button
-                      onClick={() => router.push(`/authority/complaints/${c._id}`)}
-                      size="xs"
-                      className="bg-primary hover:bg-primary/95 text-white font-semibold text-[10px] tracking-wider uppercase py-1 px-3 self-end sm:self-auto shrink-0"
-                    >
-                      View &amp; Act
-                      <ChevronRight className="size-3.5 ml-0.5" />
-                    </Button>
                   </div>
-                </Card>
+
+                  {/* SLA chip */}
+                  <div className="shrink-0">
+                    {isBreached ? (
+                      <span className="text-[10px] font-extrabold text-red-600 bg-red-100 border border-red-200 px-2 py-0.5 uppercase tracking-wide">
+                        BREACHED
+                      </span>
+                    ) : (
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 ${
+                        slaLeft.percentage > 80 ? "text-red-600 bg-red-50 border border-red-100" :
+                        slaLeft.percentage > 60 ? "text-orange-600 bg-orange-50 border border-orange-100" :
+                        "text-gray-500 bg-gray-100"
+                      }`}>
+                        {slaLeft.hours}h
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Score + upvotes */}
+                  <div className="shrink-0 text-right">
+                    <div className="text-xs font-bold text-primary">{c.priorityScore}</div>
+                    <div className="text-[10px] text-gray-400 flex items-center gap-0.5 justify-end">
+                      <ThumbsUp className="size-2.5" />
+                      {c.upvoteCount}
+                    </div>
+                  </div>
+
+                  <ChevronRight className="size-4 text-gray-300 shrink-0" />
+                </div>
               )
             })}
 
-            {/* Load More Button */}
             {remainingQueueCount > 0 && (
-              <Button
-                variant="outline"
+              <button
                 onClick={() => setLimitCount((c) => c + 10)}
-                className="w-full text-xs font-bold uppercase tracking-wider h-10 border-gray-300 mt-2 hover:bg-gray-50"
+                className="w-full py-2.5 text-xs font-bold text-primary uppercase tracking-wider border border-dashed border-primary/40 hover:bg-primary/5 transition"
               >
-                Load More ({remainingQueueCount} remaining)
-              </Button>
+                Show {remainingQueueCount} more
+              </button>
             )}
           </div>
         )}
