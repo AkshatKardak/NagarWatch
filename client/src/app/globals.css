@@ -46,75 +46,142 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ── NagarWatch Brand Status Colors ── */
+  --color-status-pending: var(--status-pending);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-resolved: var(--status-resolved);
+  --color-status-water: var(--status-water);
+  --color-accent-green: var(--accent-green);
+  --color-primary-hover: var(--primary-hover);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.147 0.004 49.3);
+  /* ── Page & Surface ── */
+  /* Background: #F8F6F1 */
+  --background: oklch(0.974 0.008 72.0);
+  /* Foreground (Primary Text): #1F2937 */
+  --foreground: oklch(0.254 0.022 264.0);
+
+  /* Cards: #FFFFFF */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.147 0.004 49.3);
+  --card-foreground: oklch(0.254 0.022 264.0);
+
+  /* Popover */
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.147 0.004 49.3);
-  --primary: oklch(0.214 0.009 43.1);
-  --primary-foreground: oklch(0.986 0.002 67.8);
-  --secondary: oklch(0.96 0.002 17.2);
-  --secondary-foreground: oklch(0.214 0.009 43.1);
-  --muted: oklch(0.96 0.002 17.2);
-  --muted-foreground: oklch(0.547 0.021 43.1);
-  --accent: oklch(0.96 0.002 17.2);
-  --accent-foreground: oklch(0.214 0.009 43.1);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0.005 34.3);
-  --input: oklch(0.922 0.005 34.3);
-  --ring: oklch(0.714 0.014 41.2);
-  --chart-1: oklch(0.868 0.007 39.5);
-  --chart-2: oklch(0.547 0.021 43.1);
-  --chart-3: oklch(0.438 0.017 39.3);
-  --chart-4: oklch(0.367 0.016 35.7);
-  --chart-5: oklch(0.268 0.011 36.5);
+  --popover-foreground: oklch(0.254 0.022 264.0);
+
+  /* ── Primary: #D95D0F ── */
+  --primary: oklch(0.580 0.178 44.0);
+  /* Primary foreground: white */
+  --primary-foreground: oklch(1 0 0);
+  /* Primary Hover: #B94E0C */
+  --primary-hover: oklch(0.510 0.165 43.0);
+
+  /* ── Secondary (muted warm) ── */
+  /* Using border color #ECE7DE as secondary bg */
+  --secondary: oklch(0.940 0.012 72.0);
+  --secondary-foreground: oklch(0.254 0.022 264.0);
+
+  /* ── Muted: slightly off-white warm ── */
+  --muted: oklch(0.955 0.010 72.0);
+  /* Secondary Text: #4B5563 */
+  --muted-foreground: oklch(0.440 0.022 264.0);
+
+  /* ── Accent Green: #2E6A42 ── */
+  --accent: oklch(0.940 0.012 72.0);
+  --accent-foreground: oklch(0.254 0.022 264.0);
+  --accent-green: oklch(0.440 0.110 152.0);
+
+  /* ── Destructive: #DC2626 (Pending/Error red) ── */
+  --destructive: oklch(0.535 0.210 27.0);
+
+  /* ── Borders: #ECE7DE ── */
+  --border: oklch(0.922 0.014 72.0);
+  --input: oklch(0.922 0.014 72.0);
+  --ring: oklch(0.580 0.178 44.0);
+
+  /* ── Charts (warm palette) ── */
+  --chart-1: oklch(0.580 0.178 44.0);
+  --chart-2: oklch(0.440 0.110 152.0);
+  --chart-3: oklch(0.720 0.155 55.0);
+  --chart-4: oklch(0.535 0.210 27.0);
+  --chart-5: oklch(0.254 0.022 264.0);
+
   --radius: 0.625rem;
-  --sidebar: oklch(0.986 0.002 67.8);
-  --sidebar-foreground: oklch(0.147 0.004 49.3);
-  --sidebar-primary: oklch(0.214 0.009 43.1);
-  --sidebar-primary-foreground: oklch(0.986 0.002 67.8);
-  --sidebar-accent: oklch(0.96 0.002 17.2);
-  --sidebar-accent-foreground: oklch(0.214 0.009 43.1);
-  --sidebar-border: oklch(0.922 0.005 34.3);
-  --sidebar-ring: oklch(0.714 0.014 41.2);
+
+  /* ── Sidebar ── */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.254 0.022 264.0);
+  --sidebar-primary: oklch(0.580 0.178 44.0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.940 0.012 72.0);
+  --sidebar-accent-foreground: oklch(0.254 0.022 264.0);
+  --sidebar-border: oklch(0.922 0.014 72.0);
+  --sidebar-ring: oklch(0.580 0.178 44.0);
+
+  /* ── Status Colors ── */
+  /* Pending:     #DC2626 */
+  --status-pending: oklch(0.535 0.210 27.0);
+  /* In Progress: #F59E0B */
+  --status-in-progress: oklch(0.769 0.168 72.0);
+  /* Resolved:    #16A34A */
+  --status-resolved: oklch(0.524 0.147 152.0);
+  /* Water:       #2563EB */
+  --status-water: oklch(0.487 0.212 264.0);
 }
 
 .dark {
-  --background: oklch(0.147 0.004 49.3);
-  --foreground: oklch(0.986 0.002 67.8);
-  --card: oklch(0.214 0.009 43.1);
-  --card-foreground: oklch(0.986 0.002 67.8);
-  --popover: oklch(0.214 0.009 43.1);
-  --popover-foreground: oklch(0.986 0.002 67.8);
-  --primary: oklch(0.922 0.005 34.3);
-  --primary-foreground: oklch(0.214 0.009 43.1);
-  --secondary: oklch(0.268 0.011 36.5);
-  --secondary-foreground: oklch(0.986 0.002 67.8);
-  --muted: oklch(0.268 0.011 36.5);
-  --muted-foreground: oklch(0.714 0.014 41.2);
-  --accent: oklch(0.268 0.011 36.5);
-  --accent-foreground: oklch(0.986 0.002 67.8);
-  --destructive: oklch(0.704 0.191 22.216);
+  /* ── Page & Surface (dark) ── */
+  --background: oklch(0.160 0.012 264.0);
+  --foreground: oklch(0.974 0.008 72.0);
+
+  --card: oklch(0.210 0.016 264.0);
+  --card-foreground: oklch(0.974 0.008 72.0);
+
+  --popover: oklch(0.210 0.016 264.0);
+  --popover-foreground: oklch(0.974 0.008 72.0);
+
+  /* Primary stays orange in dark mode */
+  --primary: oklch(0.620 0.178 44.0);
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: oklch(0.560 0.165 43.0);
+
+  --secondary: oklch(0.265 0.018 264.0);
+  --secondary-foreground: oklch(0.974 0.008 72.0);
+
+  --muted: oklch(0.265 0.018 264.0);
+  --muted-foreground: oklch(0.640 0.018 264.0);
+
+  --accent: oklch(0.265 0.018 264.0);
+  --accent-foreground: oklch(0.974 0.008 72.0);
+  --accent-green: oklch(0.520 0.120 152.0);
+
+  --destructive: oklch(0.620 0.210 27.0);
+
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.547 0.021 43.1);
-  --chart-1: oklch(0.868 0.007 39.5);
-  --chart-2: oklch(0.547 0.021 43.1);
-  --chart-3: oklch(0.438 0.017 39.3);
-  --chart-4: oklch(0.367 0.016 35.7);
-  --chart-5: oklch(0.268 0.011 36.5);
-  --sidebar: oklch(0.214 0.009 43.1);
-  --sidebar-foreground: oklch(0.986 0.002 67.8);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.986 0.002 67.8);
-  --sidebar-accent: oklch(0.268 0.011 36.5);
-  --sidebar-accent-foreground: oklch(0.986 0.002 67.8);
+  --ring: oklch(0.620 0.178 44.0);
+
+  --chart-1: oklch(0.620 0.178 44.0);
+  --chart-2: oklch(0.520 0.120 152.0);
+  --chart-3: oklch(0.769 0.168 72.0);
+  --chart-4: oklch(0.620 0.210 27.0);
+  --chart-5: oklch(0.974 0.008 72.0);
+
+  --sidebar: oklch(0.210 0.016 264.0);
+  --sidebar-foreground: oklch(0.974 0.008 72.0);
+  --sidebar-primary: oklch(0.620 0.178 44.0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.265 0.018 264.0);
+  --sidebar-accent-foreground: oklch(0.974 0.008 72.0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.547 0.021 43.1);
+  --sidebar-ring: oklch(0.620 0.178 44.0);
+
+  --status-pending: oklch(0.600 0.210 27.0);
+  --status-in-progress: oklch(0.800 0.168 72.0);
+  --status-resolved: oklch(0.580 0.147 152.0);
+  --status-water: oklch(0.550 0.212 264.0);
 }
 
 @layer base {
@@ -126,5 +193,31 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* ── NagarWatch Utility Classes ── */
+@layer utilities {
+  /* Status badge helpers */
+  .status-pending {
+    @apply bg-red-50 text-red-700 border border-red-200;
+  }
+  .status-in-progress {
+    @apply bg-amber-50 text-amber-700 border border-amber-200;
+  }
+  .status-resolved {
+    @apply bg-green-50 text-green-700 border border-green-200;
+  }
+  .status-water {
+    @apply bg-blue-50 text-blue-700 border border-blue-200;
+  }
+
+  /* Primary button hover */
+  .btn-primary {
+    background-color: var(--primary);
+    color: white;
+  }
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
   }
 }
