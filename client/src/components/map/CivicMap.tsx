@@ -2,48 +2,73 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { useEffect } from "react";
 import type { IComplaint } from "@/types/complaint";
 import { getCategoryLabel, getMarkerColor, timeAgo } from "@/lib/utils";
 
+// Fix Leaflet default marker icon broken by bundlers
+delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function markerIcon(complaint: IComplaint): L.DivIcon {
-  const size = complaint.priority === "critical" ? 28 : 20;
-  const color = getMarkerColor(complaint.status);
+/**
+ * Mappls (MapmyIndia) tile layer
+ * - Official Indian government-backed mapping API
+ * - Correct Indian political borders: J&K, Ladakh, PoK, Aksai Chin, Arunachal Pradesh
+ * - Set NEXT_PUBLIC_MAPPLS_KEY in client/.env.local
+ * - Free tier: https://about.mappls.com/api/
+ */
+const MAPPLS_KEY =
+  process.env.NEXT_PUBLIC_MAPPLS_KEY || "7790ee75403bdda0e09c4b54165453d0";
+
+const MAPPLS_URL = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/still_map/{z}/{x}/{y}.png`;
+const MAPPLS_ATTRIBUTION = '&copy; <a href="https://mappls.com">Mappls</a> | MapmyIndia';
+
+/** SVG teardrop pin — same style as UnitedImpact IndiaMap */
+function makePinIcon(color: string, size: "normal" | "large" = "normal"): L.DivIcon {
+  const w = size === "large" ? 36 : 28;
+  const h = size === "large" ? 50 : 40;
   return L.divIcon({
     className: "",
-    html: `<div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};border:3px solid white;box-shadow:0 4px 14px rgba(0,0,0,.25)"></div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 30 42">
+      <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27S30 25.5 30 15C30 6.716 23.284 0 15 0z"
+        fill="${color}" stroke="white" stroke-width="2"/>
+      <circle cx="15" cy="15" r="6" fill="white"/>
+    </svg>`,
+    iconSize: [w, h],
+    iconAnchor: [w / 2, h],
+    popupAnchor: [0, -h],
   });
 }
 
-/**
- * Tile layer: OpenStreetMap Humanitarian (HOT)
- *
- * Why HOT tiles instead of standard OSM?
- * - Fully compliant with India's official border depiction
- *   (Jammu & Kashmir, Ladakh, Aksai Chin, PoK shown correctly)
- * - Regularly updated — reflects Survey of India conventions
- * - Free, no API key required
- * - Optimised for civic/humanitarian use cases
- */
-const INDIA_TILE_URL = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
-const INDIA_TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://www.hotosm.org">HOT</a>';
+const STATUS_COLORS: Record<string, string> = {
+  pending: "#EF4444",
+  in_progress: "#F59E0B",
+  resolved: "#10B981",
+};
+
+/** Fixes map rendering when inside flex / hidden / tab containers */
+function InvalidateOnMount() {
+  const map = useMap();
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 100);
+    return () => clearTimeout(t);
+  }, [map]);
+  return null;
+}
 
 export default function CivicMap({
   complaints,
   height = "500px",
-  center = [20.5937, 78.9629], // Geographic centre of India
+  center = [20.5937, 78.9629],
   zoom = 5,
   onMarkerClick,
   showControls,
+  className = "",
 }: {
   complaints: IComplaint[];
   height?: string;
@@ -51,51 +76,128 @@ export default function CivicMap({
   zoom?: number;
   onMarkerClick?: (complaint: IComplaint) => void;
   showControls?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl">
-      {showControls ? (
-        <div
-          className="absolute left-3 top-3 z-[500] flex gap-2 rounded-lg bg-white/95 px-3 py-2 shadow-md text-xs"
-        >
-          {[
-            { status: "pending", color: "#EF4444", label: "Pending" },
-            { status: "in_progress", color: "#F59E0B", label: "In Progress" },
-            { status: "resolved", color: "#10B981", label: "Resolved" },
-          ].map(({ status, color, label }) => (
-            <span key={status} className="flex items-center gap-1.5 font-medium" style={{ color: "#374151" }}>
-              <span
-                className="inline-block h-3 w-3 rounded-full"
-                style={{ backgroundColor: color }}
-              />
-              {label}
-            </span>
-          ))}
-        </div>
-      ) : null}
-      <MapContainer center={center} zoom={zoom} style={{ height }} className="z-0">
-        <TileLayer url={INDIA_TILE_URL} attribution={INDIA_TILE_ATTRIBUTION} />
+    <div
+      className={`overflow-hidden rounded-xl border shadow-sm ${className}`}
+      style={{ height, borderColor: "#ECE7DE" }}
+    >
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        minZoom={4}
+        maxZoom={18}
+        style={{ height: "100%", width: "100%" }}
+        scrollWheelZoom
+      >
+        <InvalidateOnMount />
+
+        <TileLayer
+          url={MAPPLS_URL}
+          attribution={MAPPLS_ATTRIBUTION}
+          maxZoom={18}
+          tileSize={256}
+        />
+
+        {/* Status legend overlay */}
+        {showControls && (
+          <div
+            className="leaflet-top leaflet-left"
+            style={{ pointerEvents: "none", marginTop: 48 }}
+          >
+            <div
+              className="leaflet-control"
+              style={{
+                background: "rgba(255,255,255,0.95)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                fontSize: 12,
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                border: "1px solid #ECE7DE",
+              }}
+            >
+              {[
+                { label: "Pending", color: STATUS_COLORS.pending },
+                { label: "In Progress", color: STATUS_COLORS.in_progress },
+                { label: "Resolved", color: STATUS_COLORS.resolved },
+              ].map(({ label, color }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <svg width="14" height="20" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27S30 25.5 30 15C30 6.716 23.284 0 15 0z"
+                      fill={color}
+                      stroke="white"
+                      strokeWidth="3"
+                    />
+                    <circle cx="15" cy="15" r="6" fill="white" />
+                  </svg>
+                  <span style={{ color: "#374151", fontWeight: 500 }}>{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {complaints.map((complaint) => {
           const [lng, lat] = complaint.location.coordinates;
+          const color = STATUS_COLORS[complaint.status] ?? "#6B7280";
+          const size = complaint.priority === "critical" ? "large" : "normal";
           return (
-            <Marker key={complaint._id} position={[lat, lng]} icon={markerIcon(complaint)}>
+            <Marker
+              key={complaint._id}
+              position={[lat, lng]}
+              icon={makePinIcon(color, size)}
+              eventHandlers={onMarkerClick ? { click: () => onMarkerClick(complaint) } : {}}
+            >
               <Popup>
-                <div className="space-y-1 text-sm">
-                  <strong>{complaint.title}</strong>
-                  <p>
-                    {getCategoryLabel(complaint.category)} — {complaint.status.replace("_", " ")}
+                <div style={{ minWidth: 170, fontFamily: "Arial, sans-serif" }}>
+                  <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 4px", color: "#0f172a" }}>
+                    {complaint.title}
                   </p>
-                  <p>{complaint.upvoteCount} upvotes</p>
-                  <p className="text-gray-400 text-xs">{timeAgo(complaint.createdAt)}</p>
-                  {onMarkerClick ? (
+                  <p style={{ fontSize: 11, color: "#64748b", margin: "0 0 6px" }}>
+                    {getCategoryLabel(complaint.category)} • {timeAgo(complaint.createdAt)}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "2px 8px",
+                        borderRadius: 99,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "white",
+                        background: color,
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {complaint.status.replace("_", " ")}
+                    </span>
+                    <span style={{ fontSize: 11, color: "#64748b" }}>
+                      👍 {complaint.upvoteCount}
+                    </span>
+                  </div>
+                  {onMarkerClick && (
                     <button
-                      className="text-orange-600 underline font-medium"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#D95D0F",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
                       type="button"
                       onClick={() => onMarkerClick(complaint)}
                     >
-                      View Details
+                      View Details →
                     </button>
-                  ) : null}
+                  )}
                 </div>
               </Popup>
             </Marker>
