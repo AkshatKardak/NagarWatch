@@ -41,18 +41,22 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="fixed top-0 z-50 w-full border-b bg-white/95 shadow-sm backdrop-blur" style={{ borderColor: "#ECE7DE" }}>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+    <nav
+      className="fixed top-0 z-50 w-full border-b bg-white/95 shadow-sm backdrop-blur"
+      style={{ borderColor: "#ECE7DE" }}
+    >
+      {/* Navbar height bumped to h-20 (80px) to give the bigger logo breathing room */}
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4">
 
         {/* ── Logo ── */}
         <Link href="/" className="flex items-center">
           <Image
             src="/Navbar.png"
             alt="NagarWatch"
-            width={160}
-            height={40}
-            priority
-            className="h-9 w-auto object-contain"
+            width={220}      /* render hint — actual size controlled by className */
+            height={56}
+            priority         /* LCP asset — preload immediately */
+            className="h-14 w-auto object-contain" /* h-14 = 56px tall, width scales automatically */
           />
         </Link>
 

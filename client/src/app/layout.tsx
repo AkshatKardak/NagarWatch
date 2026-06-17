@@ -11,15 +11,12 @@ export const metadata: Metadata = {
   description:
     "India's civic intelligence platform. Report issues, track progress, and hold authorities accountable.",
   icons: {
-    // Primary favicon
     icon: [
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.png", type: "image/png", sizes: "any" },
     ],
-    // Apple touch icon (home screen on iOS)
     apple: [
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.png", type: "image/png", sizes: "180x180" },
     ],
-    // Shortcut icon (legacy browsers)
     shortcut: "/favicon.png",
   },
 };
@@ -31,6 +28,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Explicit favicon tags — ensures ALL browsers pick up favicon.png */}
+        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
+      </head>
       <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
         <ClerkProvider afterSignInUrl="/" afterSignUpUrl="/">
           <AppProviders>{children}</AppProviders>
