@@ -13,6 +13,7 @@ import userRoutes from "./routes/users";
 import wardRoutes from "./routes/wards";
 import aiRoutes from "./routes/ai";
 import { initWorkers } from "./jobs/slaWorker";
+import { initWeeklyEmailScheduler } from "./jobs/weeklyEmailScheduler";
 import { initSocket } from "./socket";
 
 const app = express();
@@ -42,6 +43,7 @@ initSocket(server);
 async function bootstrap(): Promise<void> {
   await connectDB();
   initWorkers();
+  initWeeklyEmailScheduler(); // ⏰ Fires every Monday 08:00 AM
 
   server.listen(port, () => {
     console.log(`NagarWatch server running on port ${port}`);

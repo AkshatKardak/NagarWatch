@@ -45,10 +45,9 @@ export function Navbar() {
       className="fixed top-0 z-50 w-full border-b bg-white/95 shadow-sm backdrop-blur"
       style={{ borderColor: "#ECE7DE" }}
     >
-      {/* h-24 = 96px — tall enough for the bigger logo */}
       <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4">
 
-        {/* ── Logo ── */}
+        {/* Logo */}
         <Link href="/" className="flex items-center">
           <Image
             src="/Navbar.png"
@@ -60,7 +59,7 @@ export function Navbar() {
           />
         </Link>
 
-        {/* ── Desktop nav links ── */}
+        {/* Desktop nav links */}
         <div className="hidden items-center gap-6 md:flex">
           {navLinks.map((link) => (
             <Link
@@ -74,11 +73,11 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* ── Auth + mobile toggle ── */}
+        {/* Auth + mobile toggle */}
         <div className="flex items-center gap-2">
           {isSignedIn ? (
             <>
-              {/* Notification bell */}
+              {/* Notification bell — links to /notifications on click */}
               <div className="relative">
                 <Button
                   type="button"
@@ -109,14 +108,24 @@ export function Navbar() {
                       style={{ borderColor: "#ECE7DE" }}
                     >
                       <p className="text-sm font-bold" style={{ color: "#1F2937" }}>Notifications</p>
-                      {unreadCount > 0 && (
-                        <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: "#FFF3EB", color: "#D95D0F" }}
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: "#FFF3EB", color: "#D95D0F" }}
+                          >
+                            {unreadCount} unread
+                          </span>
+                        )}
+                        <Link
+                          href="/notifications"
+                          className="text-[11px] font-medium hover:underline"
+                          style={{ color: "#D95D0F" }}
+                          onClick={() => setNotificationsOpen(false)}
                         >
-                          {unreadCount} unread
-                        </span>
-                      )}
+                          See all
+                        </Link>
+                      </div>
                     </div>
                     <div className="max-h-72 overflow-y-auto divide-y" style={{ borderColor: "#ECE7DE" }}>
                       {notifications.slice(0, 5).length ? (
@@ -129,6 +138,16 @@ export function Navbar() {
                       ) : (
                         <p className="px-4 py-6 text-center text-xs" style={{ color: "#9CA3AF" }}>No notifications yet</p>
                       )}
+                    </div>
+                    <div className="border-t px-4 py-2" style={{ borderColor: "#ECE7DE" }}>
+                      <Link
+                        href="/notifications"
+                        className="block text-center text-xs font-bold py-1 hover:opacity-80"
+                        style={{ color: "#D95D0F" }}
+                        onClick={() => setNotificationsOpen(false)}
+                      >
+                        View all notifications →
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -162,7 +181,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* ── Mobile menu ── */}
+      {/* Mobile menu */}
       {mobileOpen && (
         <div
           className="border-t px-4 py-3 md:hidden"
@@ -179,6 +198,16 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          {isSignedIn && (
+            <Link
+              href="/notifications"
+              className="block py-2.5 text-sm font-medium"
+              style={{ color: "#D95D0F" }}
+              onClick={() => setMobileOpen(false)}
+            >
+              Notifications {unreadCount > 0 ? `(${unreadCount})` : ""}
+            </Link>
+          )}
         </div>
       )}
     </nav>
