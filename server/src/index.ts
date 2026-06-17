@@ -12,6 +12,7 @@ import http from "http";
 import morgan from "morgan";
 import { connectDB } from "./config/db";
 import { errorHandler } from "./middleware/errorHandler";
+import { clerkAuth } from "./middleware/auth";
 import complaintRoutes from "./routes/complaints";
 import userRoutes from "./routes/users";
 import wardRoutes from "./routes/wards";
@@ -33,6 +34,9 @@ app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Apply Clerk auth globally so getAuth(req) works in every route
+app.use(clerkAuth);
 
 app.use("/api/v1/complaints", complaintRoutes);
 app.use("/api/v1/users", userRoutes);

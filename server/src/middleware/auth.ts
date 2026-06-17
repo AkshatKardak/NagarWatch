@@ -2,10 +2,10 @@ import { clerkMiddleware, getAuth } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { User } from "../models/User";
 
-// Augment Express Request to carry the resolved MongoDB user
 declare global {
   namespace Express {
     interface Request {
+      clerkUserId?: string;
       user?: InstanceType<typeof User> & { _id: any };
     }
   }
@@ -13,22 +13,20 @@ declare global {
 
 export const clerkAuth = clerkMiddleware();
 
-/** Rejects requests that have no Clerk session */
+/** Rejects requests with no Clerk session and attaches clerkUserId to req */
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const auth = getAuth(req);
   if (!auth?.userId) {
     res.status(401).json({ success: false, message: "Unauthorized" });
     return;
   }
+  req.clerkUserId = auth.userId; // ← attach so route handlers can use req.clerkUserId
   next();
 }
 
 /**
- * Looks up the MongoDB User document that matches the Clerk userId
- * and attaches it to req.user so route handlers don't have to repeat
- * the database lookup.
- *
- * Must be placed AFTER requireAuth in the middleware chain.
+ * Looks up the MongoDB User document for the Clerk userId
+ * and attaches it to req.user. Must be placed AFTER requireAuth.
  */
 export async function attachUser(
   req: Request,
@@ -41,6 +39,7 @@ export async function attachUser(
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
+    req.clerkUserId = auth.userId;
 
     const user = await User.findOne({ clerkId: auth.userId });
     if (!user) {
@@ -55,11 +54,7 @@ export async function attachUser(
   }
 }
 
-/**
- * Restricts a route to one or more roles.
- * Reads the role from Clerk's publicMetadata.role.
- * Must be placed AFTER requireAuth.
- */
+/** Restricts a route to one or more roles via Clerk publicMetadata.role */
 export function requireRole(...roles: string[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const auth = getAuth(req);
