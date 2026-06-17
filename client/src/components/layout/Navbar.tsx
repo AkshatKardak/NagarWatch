@@ -29,9 +29,9 @@ export function Navbar() {
 
   const dashboardHref =
     appUser?.role === "admin"
-      ? "/admin/admin-dashboard"
+      ? "/admin-dashboard"
       : appUser?.role === "authority"
-        ? "/authority/authority-dashboard"
+        ? "/authority-dashboard"
         : "/dashboard";
 
   const navLinks = [
@@ -45,18 +45,18 @@ export function Navbar() {
       className="fixed top-0 z-50 w-full border-b bg-white/95 shadow-sm backdrop-blur"
       style={{ borderColor: "#ECE7DE" }}
     >
-      {/* Navbar height bumped to h-20 (80px) to give the bigger logo breathing room */}
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4">
+      {/* h-24 = 96px — tall enough for the bigger logo */}
+      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4">
 
         {/* ── Logo ── */}
         <Link href="/" className="flex items-center">
           <Image
             src="/Navbar.png"
             alt="NagarWatch"
-            width={220}      /* render hint — actual size controlled by className */
-            height={56}
-            priority         /* LCP asset — preload immediately */
-            className="h-14 w-auto object-contain" /* h-14 = 56px tall, width scales automatically */
+            width={280}
+            height={72}
+            priority
+            className="h-16 w-auto object-contain"
           />
         </Link>
 
@@ -87,7 +87,7 @@ export function Navbar() {
                   aria-label="Notifications"
                   onClick={() => setNotificationsOpen((open) => !open)}
                 >
-                  <Bell className="size-4" style={{ color: "#4B5563" }} />
+                  <Bell className="size-5" style={{ color: "#4B5563" }} />
                 </Button>
                 {unreadCount > 0 && (
                   <span
@@ -157,7 +157,7 @@ export function Navbar() {
             aria-label="Menu"
             onClick={() => setMobileOpen((open) => !open)}
           >
-            {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
         </div>
       </div>

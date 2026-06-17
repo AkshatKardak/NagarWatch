@@ -29,9 +29,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Explicit favicon tags — ensures ALL browsers pick up favicon.png */}
-        <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+        {/*
+          Explicit <link> tags OVERRIDE Next.js default favicon.ico.
+          Without these, Next.js serves /app/favicon.ico (the Vercel logo) instead.
+        */}
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="shortcut icon" type="image/png" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/favicon.png" />
       </head>
       <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
