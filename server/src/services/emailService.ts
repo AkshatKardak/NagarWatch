@@ -1,14 +1,19 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const emailConfigured = Boolean(process.env.RESEND_API_KEY);
+// Gracefully handle missing API key — server boots fine without it
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const emailConfigured = Boolean(RESEND_API_KEY);
+
+// Only instantiate Resend when key is present to avoid constructor crash
+const resend = emailConfigured ? new Resend(RESEND_API_KEY) : null;
+
 const FROM_ADDRESS = process.env.EMAIL_FROM || "NagarWatch <noreply@yourdomain.com>";
 const dashboardUrl = process.env.CLIENT_URL || "http://localhost:3000";
 
 if (emailConfigured) {
   console.log("Email notifications configured (Resend)");
 } else {
-  console.warn("Email not configured - notifications will be skipped (add RESEND_API_KEY)");
+  console.warn("Email not configured - add RESEND_API_KEY to server/.env to enable emails");
 }
 
 function cardHtml(title: string, body: string): string {
@@ -32,7 +37,7 @@ function cardHtml(title: string, body: string): string {
           </div>
         </div>
         <div style="background:#F9F7F4;padding:12px 24px;border-top:1px solid #ECE7DE">
-          <p style="margin:0;font-size:11px;color:#9CA3AF">This is an automated message from NagarWatch. Do not reply.</p>
+          <p style="margin:0;font-size:11px;color:#9CA3AF">Automated message from NagarWatch. Do not reply.</p>
         </div>
       </div>
     </body>
@@ -40,34 +45,37 @@ function cardHtml(title: string, body: string): string {
   `;
 }
 
+async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  if (!emailConfigured || !resend) {
+    console.log(`[EMAIL MOCK] To: ${to} | Subject: ${subject}`);
+    return;
+  }
+  const { error } = await resend.emails.send({ from: FROM_ADDRESS, to, subject, html });
+  if (error) console.error(`Resend error (${subject}):`, error);
+}
+
 export async function sendSLAWarning(
   authorityEmail: string,
   complaint: { id: string; title: string; category: string; deadline: Date }
 ): Promise<void> {
-  if (!emailConfigured) {
-    console.log(`[EMAIL MOCK] SLA warning for ${complaint.id}`);
-    return;
-  }
-  const { error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: authorityEmail,
-    subject: `⚠️ SLA Warning - Action Required: ${complaint.title}`,
-    html: cardHtml(
+  await sendEmail(
+    authorityEmail,
+    `⚠️ SLA Warning - Action Required: ${complaint.title}`,
+    cardHtml(
       "SLA Deadline Approaching",
       `
-        <p>A civic complaint is approaching its service level deadline and requires immediate attention.</p>
+        <p>A civic complaint is approaching its service level deadline.</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin:16px 0">
           <tr><td style="padding:6px 0;color:#6B7280">Complaint ID</td><td style="padding:6px 0;font-weight:bold">${complaint.id}</td></tr>
           <tr><td style="padding:6px 0;color:#6B7280">Title</td><td style="padding:6px 0;font-weight:bold">${complaint.title}</td></tr>
           <tr><td style="padding:6px 0;color:#6B7280">Category</td><td style="padding:6px 0">${complaint.category}</td></tr>
           <tr><td style="padding:6px 0;color:#6B7280">Deadline</td><td style="padding:6px 0;color:#D95D0F;font-weight:bold">${complaint.deadline.toLocaleString()}</td></tr>
         </table>
-        <p style="color:#DC2626;font-weight:bold">Please resolve this complaint before the deadline to avoid escalation.</p>
+        <p style="color:#DC2626;font-weight:bold">Please resolve before deadline to avoid escalation.</p>
       `
-    ),
-  });
-  if (error) console.error(`Resend SLA warning error for ${complaint.id}:`, error);
-  else console.log(`SLA warning email sent for complaint ${complaint.id}`);
+    )
+  );
+  console.log(`SLA warning email sent for complaint ${complaint.id}`);
 }
 
 export async function sendEscalationEmail(
@@ -75,16 +83,11 @@ export async function sendEscalationEmail(
   complaint: { id: string; title: string; location: string },
   level: number
 ): Promise<void> {
-  if (!emailConfigured) {
-    console.log(`[EMAIL MOCK] Escalation level ${level} for ${complaint.id}`);
-    return;
-  }
   const escalationMeaning = level === 1 ? "Zonal Head" : "Commissioner";
-  const { error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: toEmail,
-    subject: `🚨 Escalation Level ${level} - ${complaint.title}`,
-    html: cardHtml(
+  await sendEmail(
+    toEmail,
+    `🚨 Escalation Level ${level} - ${complaint.title}`,
+    cardHtml(
       `Escalation Level ${level} — ${escalationMeaning} Action Required`,
       `
         <p>This complaint has breached its SLA and has been escalated to <strong>${escalationMeaning}</strong> level.</p>
@@ -93,27 +96,21 @@ export async function sendEscalationEmail(
           <tr><td style="padding:6px 0;color:#6B7280">Title</td><td style="padding:6px 0;font-weight:bold">${complaint.title}</td></tr>
           <tr><td style="padding:6px 0;color:#6B7280">Location</td><td style="padding:6px 0">${complaint.location}</td></tr>
         </table>
-        <p style="color:#DC2626;font-weight:bold">Urgent review and action is required immediately.</p>
+        <p style="color:#DC2626;font-weight:bold">Urgent review and action required immediately.</p>
       `
-    ),
-  });
-  if (error) console.error(`Resend escalation error for ${complaint.id}:`, error);
-  else console.log(`Escalation email sent for complaint ${complaint.id} at level ${level}`);
+    )
+  );
+  console.log(`Escalation email sent for complaint ${complaint.id} at level ${level}`);
 }
 
 export async function sendResolutionEmail(
   citizenEmail: string,
   complaint: { id: string; title: string; resolvedAt: Date }
 ): Promise<void> {
-  if (!emailConfigured) {
-    console.log(`[EMAIL MOCK] Resolution email for ${complaint.id}`);
-    return;
-  }
-  const { error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: citizenEmail,
-    subject: `✅ Your Complaint Has Been Resolved - NagarWatch`,
-    html: cardHtml(
+  await sendEmail(
+    citizenEmail,
+    `✅ Your Complaint Has Been Resolved - NagarWatch`,
+    cardHtml(
       "Complaint Resolved",
       `
         <p>Great news! The civic issue you reported has been resolved by the local authority.</p>
@@ -124,10 +121,9 @@ export async function sendResolutionEmail(
         </table>
         <p>Before and after photos are available on NagarWatch for verification.</p>
       `
-    ),
-  });
-  if (error) console.error(`Resend resolution error for ${complaint.id}:`, error);
-  else console.log(`Resolution email sent for complaint ${complaint.id}`);
+    )
+  );
+  console.log(`Resolution email sent for complaint ${complaint.id}`);
 }
 
 export async function sendWeeklySummaryEmail(
@@ -141,40 +137,34 @@ export async function sendWeeklySummaryEmail(
     weekLabel: string;
   }
 ): Promise<void> {
-  if (!emailConfigured) {
-    console.log(`[EMAIL MOCK] Weekly summary email to ${commissionerEmail}`);
-    return;
-  }
-
   const bodyHtml = summaryMarkdown
     .replace(/## (.+)/g, "<h3 style='color:#D95D0F;margin:20px 0 8px'>$1</h3>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
 
-  const { error } = await resend.emails.send({
-    from: FROM_ADDRESS,
-    to: commissionerEmail,
-    subject: `📊 NagarWatch Weekly Civic Summary — ${stats.weekLabel}`,
-    html: cardHtml(
+  await sendEmail(
+    commissionerEmail,
+    `📊 NagarWatch Weekly Civic Summary — ${stats.weekLabel}`,
+    cardHtml(
       `Weekly Civic Summary — ${stats.weekLabel}`,
       `
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
           <tr>
             <td style="padding:10px;background:#F9F7F4;border-radius:6px;text-align:center">
               <div style="font-size:24px;font-weight:bold;color:#D95D0F">${stats.newComplaints}</div>
-              <div style="font-size:12px;color:#6B7280">New Complaints</div>
+              <div style="font-size:12px;color:#6B7280">New</div>
             </td>
-            <td style="width:10px"></td>
+            <td style="width:8px"></td>
             <td style="padding:10px;background:#F0FDF4;border-radius:6px;text-align:center">
               <div style="font-size:24px;font-weight:bold;color:#059669">${stats.resolved}</div>
               <div style="font-size:12px;color:#6B7280">Resolved</div>
             </td>
-            <td style="width:10px"></td>
+            <td style="width:8px"></td>
             <td style="padding:10px;background:#FFF7ED;border-radius:6px;text-align:center">
               <div style="font-size:24px;font-weight:bold;color:#D97706">${stats.pending}</div>
               <div style="font-size:12px;color:#6B7280">Pending</div>
             </td>
-            <td style="width:10px"></td>
+            <td style="width:8px"></td>
             <td style="padding:10px;background:#FEF2F2;border-radius:6px;text-align:center">
               <div style="font-size:24px;font-weight:bold;color:#DC2626">${stats.slaBreaches}</div>
               <div style="font-size:12px;color:#6B7280">SLA Breaches</div>
@@ -183,8 +173,7 @@ export async function sendWeeklySummaryEmail(
         </table>
         <div style="margin-top:20px;font-size:14px;line-height:1.7">${bodyHtml}</div>
       `
-    ),
-  });
-  if (error) console.error(`Resend weekly summary error:`, error);
-  else console.log(`Weekly summary email sent to ${commissionerEmail} for ${stats.weekLabel}`);
+    )
+  );
+  console.log(`Weekly summary email sent to ${commissionerEmail} for ${stats.weekLabel}`);
 }
