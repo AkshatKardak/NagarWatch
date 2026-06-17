@@ -5,6 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://typescriptlang.org)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?logo=mongodb)](https://mongodb.com)
+[![Gemini AI](https://img.shields.io/badge/Gemini-1.5%20Flash-orange?logo=google)](https://aistudio.google.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
 
 ---
@@ -17,16 +18,18 @@
 4. [Objectives](#4-objectives)
 5. [User Roles](#5-user-roles)
 6. [Key Features](#6-key-features)
-7. [Unique Features](#7-unique-features)
-8. [System Architecture](#8-system-architecture)
-9. [Workflow](#9-workflow)
-10. [Technology Stack](#10-technology-stack)
-11. [Project Structure](#11-project-structure)
-12. [Getting Started](#12-getting-started)
-13. [Future Enhancements (Phase 2)](#13-future-enhancements-phase-2)
-14. [Expected Impact](#14-expected-impact)
-15. [Contributing](#15-contributing)
-16. [License](#16-license)
+7. [AI Features (Gemini)](#7-ai-features-gemini)
+8. [Unique Features](#8-unique-features)
+9. [System Architecture](#9-system-architecture)
+10. [Workflow](#10-workflow)
+11. [Technology Stack](#11-technology-stack)
+12. [Project Structure](#12-project-structure)
+13. [Getting Started](#13-getting-started)
+14. [Known Issues & Fixes](#14-known-issues--fixes)
+15. [Future Enhancements (Phase 2)](#15-future-enhancements-phase-2)
+16. [Expected Impact](#16-expected-impact)
+17. [Contributing](#17-contributing)
+18. [License](#18-license)
 
 ---
 
@@ -36,7 +39,7 @@ NagarWatch is a centralized civic issue reporting and governance platform built 
 
 - **Citizens** to photograph and report problems like potholes, garbage accumulation, broken streetlights, water leakages, and drainage failures
 - **Authorities** to manage, prioritize, and resolve complaints with mandatory proof-of-resolution photo uploads
-- **Administrators** to monitor city-wide performance, configure wards and SLA thresholds, and export analytics reports
+- **Administrators** to monitor city-wide performance, configure wards and SLA thresholds, generate AI-powered weekly summaries, and export analytics reports
 
 Each complaint is automatically scored by priority, assigned an SLA deadline, and routed to the relevant ward authority. Real-time updates via Socket.io and public map visibility ensure full transparency.
 
@@ -74,8 +77,9 @@ NagarWatch provides a centralized civic issue reporting and governance platform 
 - Administrators can monitor city-wide performance and configure the system
 - Communities can prioritize issues through voting
 - Real-time updates ensure full transparency
+- **Gemini AI** auto-categorizes complaints, generates RTI letters, and produces weekly civic digests
 
-The platform combines **geospatial mapping**, **community participation**, **role-based management**, **SLA escalation**, and **real-time communication** into a single unified ecosystem.
+The platform combines **geospatial mapping**, **community participation**, **role-based management**, **SLA escalation**, **AI intelligence**, and **real-time communication** into a single unified ecosystem.
 
 ---
 
@@ -89,6 +93,7 @@ The platform combines **geospatial mapping**, **community participation**, **rol
 - Provide authorities with actionable insights via analytics
 - Deliver real-time visibility into city infrastructure issues
 - Enforce SLA timelines and auto-escalate unresolved complaints
+- Leverage Gemini AI to assist citizens and administrators intelligently
 
 ---
 
@@ -101,8 +106,11 @@ NagarWatch uses **Clerk's `publicMetadata.role`** to gate routes and UI.
 - View nearby complaints before submitting (duplicate prevention)
 - Upvote existing complaints to boost their priority score
 - Track complaint status in real time
+- Generate RTI Act 2005 letters for complaints unresolved 30+ days
 - View personal complaint history and real-time notifications
 - **Dashboard URL:** `/dashboard`
+- **Submit URL:** `/submit`
+- **RTI Generator URL:** `/rti`
 
 ### Authority
 - View and manage complaints assigned to their ward
@@ -110,15 +118,21 @@ NagarWatch uses **Clerk's `publicMetadata.role`** to gate routes and UI.
 - Upload mandatory resolution proof (Before / After photos)
 - Monitor SLA timers and act before escalation triggers
 - View ward-level analytics
-- **Dashboard URL:** `/authority/authority-dashboard`
+- **Dashboard URL:** `/authority-dashboard`
+- **Complaints URL:** `/authority/complaints`
+- **Analytics URL:** `/analytics`
 
 ### Administrator
 - Manage authority accounts and user roles
 - Configure wards, categories, and SLA thresholds
 - Moderate complaints
 - View city-wide analytics and department performance
+- Generate AI-powered weekly civic summary for the Commissioner
 - Monitor platform health and SLA breach rates
-- **Dashboard URL:** `/admin/admin-dashboard`
+- **Dashboard URL:** `/admin-dashboard`
+- **Users URL:** `/users`
+- **Wards URL:** `/wards`
+- **Weekly Summary URL:** `/admin/weekly-summary`
 
 ---
 
@@ -140,8 +154,7 @@ Citizens submit complaints with:
 - Category (Pothole, Water, Garbage, Streetlight, Road, Drainage, Other)
 - Image upload (stored on Cloudinary)
 - GPS auto-detected location or manual pin on Leaflet map
-
-All complaints are instantly stored in MongoDB and broadcast to all users via Socket.io.
+- **Gemini AI auto-categorize button** to suggest category, priority, keywords, and estimated SLA
 
 ### 6.3 Nearby Complaint Detection (Geospatial Duplicate Prevention)
 Before creating a new complaint, the system checks for existing complaints within a **50-metre radius** using MongoDB `$geoNear` queries.
@@ -149,8 +162,6 @@ Before creating a new complaint, the system checks for existing complaints withi
 - If a nearby complaint is found → citizen sees a comparison modal
 - Citizen can **Join / Upvote** the existing complaint, or
 - Citizen can **Create New** if the issue is different
-
-**Benefit:** Reduces duplicate entries, concentrates upvotes, improves prioritization accuracy.
 
 ### 6.4 Community Upvoting
 - Each upvote increases the complaint's priority score
@@ -174,7 +185,7 @@ Pending → In Progress → Resolved
 Complete timeline history with timestamps is visible to all users.
 
 ### 6.7 SLA Enforcement & Auto-Escalation
-SLA timers are enforced per complaint category using BullMQ background jobs:
+SLA timers enforced per complaint category using BullMQ background jobs:
 
 | Category | SLA Deadline |
 |---|---|
@@ -194,37 +205,103 @@ Authorities **must upload a resolution proof image** before marking a complaint 
 - **After image** — uploaded by authority at resolution
 - Side-by-side before/after visible to the public
 
-**Benefit:** Eliminates false closures and increases accountability.
-
 ### 6.9 Personal Citizen Dashboard (`/dashboard`)
 - View all submitted complaints and their current status
-- Track lifecycle progress
+- Track lifecycle progress with timeline
 - Receive real-time notifications
 - Access full complaint history
+- Quick link to RTI generator for eligible complaints
 
-### 6.10 Authority Dashboard (`/authority/authority-dashboard`)
+### 6.10 Authority Dashboard (`/authority-dashboard`)
 - View complaint queue sorted by priority score
 - Filter by ward, category, and status
 - Update complaint status with action notes
 - Upload resolution proof photo
 - Monitor SLA countdown timers
-- View ward-level analytics
+- View ward-level analytics at `/analytics`
 
-### 6.11 Administrative Dashboard (`/admin/admin-dashboard`)
-- Manage authority accounts and role assignments
-- Configure wards and ward boundaries
-- Manage complaint categories and SLA thresholds
+### 6.11 Administrative Dashboard (`/admin-dashboard`)
+- Manage authority accounts and role assignments at `/users`
+- Configure wards and ward boundaries at `/wards`
 - View city-wide analytics:
   - Resolution rate per department
   - SLA breach rate
   - Top reported categories
   - Ward-wise complaint density
   - Week-on-week trends
+- Generate AI weekly summary at `/admin/weekly-summary`
 - Export PDF performance reports (jsPDF)
 
 ---
 
-## 7. Unique Features
+## 7. AI Features (Gemini)
+
+All AI features are powered by **Gemini 1.5 Flash** via the `POST /api/v1/ai/*` endpoints. Requires `GEMINI_API_KEY` in `server/.env`.
+
+### 7.1 AI Auto-Categorization (`POST /api/v1/ai/categorize`)
+
+Available as a drop-in `<AICategorizeBadge />` component on the complaint submission form.
+
+**Input:** complaint title + description 
+**Returns:**
+```json
+{
+  "category": "pothole",
+  "priority": "high",
+  "keywords": ["road", "damage", "accident"],
+  "suggestedAction": "Dispatch road repair crew within 24 hours.",
+  "estimatedSLAHours": 48,
+  "confidence": 0.94
+}
+```
+
+**Usage:**
+```tsx
+import { AICategorizeBadge } from "@/components/complaints/AICategorizeBadge"
+
+<AICategorizeBadge
+  title={formTitle}
+  description={formDescription}
+  onApply={(result) => {
+    setCategory(result.category)
+    setPriority(result.priority)
+  }}
+/>
+```
+
+### 7.2 RTI Letter Generator (`POST /api/v1/ai/rti`)
+
+Page: `/rti` (Citizen route, auth required)
+
+- Automatically loads only eligible complaints (unresolved + 30+ days old)
+- Pre-fills applicant name from Clerk user profile
+- Generates a full formal RTI Act 2005 letter citing:
+  - Section 7 (30-day response deadline)
+  - Section 19 (appeal rights)
+- Output supports **Copy** and **Download .txt**
+
+**Request body:**
+```json
+{
+  "complaintId": "...",
+  "applicantName": "John Doe",
+  "applicantAddress": "123 MG Road, Pune",
+  "applicantPhone": "9876543210"
+}
+```
+
+### 7.3 Weekly Civic Summary (`POST /api/v1/ai/weekly-summary`)
+
+Page: `/admin/weekly-summary` (Admin only)
+
+- Aggregates 7-day MongoDB stats: new complaints, resolved, in-progress, pending, SLA breaches, top 5 categories
+- Gemini generates a professional markdown digest for the Municipal Commissioner
+- Includes executive summary, highlights, areas of concern, action items
+- Supports **Download .txt** for sharing
+
+---
+
+## 8. Unique Features
 
 | Feature | Description |
 |---|---|
@@ -235,26 +312,32 @@ Authorities **must upload a resolution proof image** before marking a complaint 
 | SLA Auto-Escalation | BullMQ jobs enforce deadlines and escalate to senior officials automatically |
 | Real-Time Civic Monitoring | All events broadcast instantly via Socket.io WebSocket |
 | Dynamic Ward Assignment | MongoDB `$geoIntersects` auto-assigns complaints to correct ward by GPS polygon |
+| Gemini AI Categorization | Auto-classify category, priority, keywords, and SLA estimate from complaint text |
+| RTI Letter Generator | Gemini drafts a legally-cited RTI Act 2005 letter for unresolved complaints |
+| Weekly AI Digest | Gemini generates a weekly governance summary for the Commissioner |
+| Custom Navbar Logo & Favicon | Brand identity with `Navbar.png` and `favicon.png` from `client/public/` |
 
 ---
 
-## 8. System Architecture
+## 9. System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        BROWSER / CLIENT                         │
 │                                                                 │
 │  ┌─────────────────┐  ┌──────────────────┐  ┌───────────────┐  │
-│  │   Public UI     │  │   Citizen UI     │  │ Authority/    │  │
-│  │  /complaints    │  │  /citizen/...    │  │ Admin UI      │  │
-│  │  /map           │  │  /dashboard      │  │ /authority/.. │  │
+│  │   Public UI     │  │   Citizen UI     │  │ Authority /   │  │
+│  │  /complaints    │  │  /dashboard      │  │ Admin UI      │  │
+│  │  /map           │  │  /submit         │  │ /authority-   │  │
+│  │                 │  │  /rti            │  │ dashboard     │  │
 │  └─────────────────┘  └──────────────────┘  └───────────────┘  │
 │                              │                                  │
 │          Next.js 16 App Router (Route Groups)                   │
 │          ClerkProvider → AppProviders (Zustand + Socket)        │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │ REST API + WebSocket
-                               ▼
+│          Navbar: Navbar.png logo  │  Favicon: favicon.png       │
+└──────────────────────────────────┬──────────────────────────────┘
+                                   │ REST API + WebSocket
+                                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                       EXPRESS SERVER                            │
 │                                                                 │
@@ -262,8 +345,9 @@ Authorities **must upload a resolution proof image** before marking a complaint 
 │  │   Routes     │  │  Middleware  │  │       Services        │  │
 │  │ /complaints  │  │ Clerk Auth   │  │  Priority Scoring     │  │
 │  │ /users       │  │ Helmet/CORS  │  │  SLA Calculation      │  │
-│  │ /admin       │  │ Morgan       │  │  Cloudinary Upload    │  │
-│  └──────────────┘  └──────────────┘  └───────────────────────┘  │
+│  │ /wards       │  │ Morgan       │  │  Cloudinary Upload    │  │
+│  │ /ai          │  └──────────────┘  └───────────────────────┘  │
+│  └──────────────┘                                               │
 │                                                                 │
 │  ┌─────────────────────┐    ┌──────────────────────────────┐    │
 │  │  BullMQ Jobs        │    │     Socket.IO                │    │
@@ -279,48 +363,50 @@ Authorities **must upload a resolution proof image** before marking a complaint 
       │   ioredis)     │   │  Complaints  │   └────────────────┘
       └────────────────┘   │  Users       │
                            │  Wards       │   ┌────────────────┐
-                           │  Notifications│  │  Nodemailer    │
+                           │  Notifications│   │  Nodemailer    │
                            └──────────────┘   │  (Email alerts)│
                                               └────────────────┘
                                     │
-                           ┌────────▼────────┐
-                           │   Clerk Auth    │
-                           │  (Citizens /    │
-                           │  Authorities /  │
-                           │  Admins via     │
-                           │  publicMetadata)│
-                           └─────────────────┘
+                           ┌────────▼────────┐   ┌─────────────────┐
+                           │   Clerk Auth    │   │  Gemini AI      │
+                           │  (publicMeta   │   │  1.5 Flash      │
+                           │   role-based)   │   │  /ai/* routes   │
+                           └─────────────────┘   └─────────────────┘
 ```
 
 ---
 
-## 9. Workflow
+## 10. Workflow
 
 ```
 Step 1  → Citizen opens NagarWatch
-Step 2  → Citizen views nearby complaints on public map
-Step 3  → Citizen submits complaint (title, description, category, image, GPS location)
-Step 4  → System checks 50m radius for existing nearby complaints ($geoNear)
-Step 5  → If duplicate found → citizen upvotes existing complaint (no new entry created)
-Step 6  → If new complaint → stored in MongoDB with geospatial coordinates
-Step 7  → Image uploaded to Cloudinary, URL stored in complaint record
-Step 8  → MongoDB $geoIntersects assigns complaint to correct ward automatically
-Step 9  → Socket.io broadcasts new complaint to all connected users instantly
-Step 10 → Complaint appears on public map with 🔴 Pending marker
-Step 11 → Other citizens upvote the complaint (priority score increases)
-Step 12 → Authority reviews queue sorted by priority score
-Step 13 → Authority updates status: Pending → In Progress
-Step 14 → Citizen receives real-time status notification via Socket.io
-Step 15 → SLA timer runs in background via BullMQ
-Step 16 → If SLA breached → auto-escalation triggered up the chain
-Step 17 → Authority uploads After photo as resolution proof
-Step 18 → Status updated to Resolved → map marker turns 🟢
-Step 19 → Citizen receives resolution notification with before/after proof
+Step 2  → Citizen views nearby complaints on public map (/map)
+Step 3  → Citizen goes to /submit — optionally uses AI auto-categorize
+Step 4  → Citizen submits complaint (title, description, category, image, GPS)
+Step 5  → System checks 50m radius for existing nearby complaints ($geoNear)
+Step 6  → If duplicate found → citizen upvotes existing complaint
+Step 7  → If new complaint → stored in MongoDB with geospatial coordinates
+Step 8  → Image uploaded to Cloudinary, URL stored in complaint record
+Step 9  → MongoDB $geoIntersects assigns complaint to correct ward automatically
+Step 10 → Socket.io broadcasts new complaint to all connected users instantly
+Step 11 → Complaint appears on public map with 🔴 Pending marker
+Step 12 → Other citizens upvote the complaint (priority score increases)
+Step 13 → Authority reviews queue at /authority-dashboard sorted by priority
+Step 14 → Authority updates status: Pending → In Progress
+Step 15 → Citizen receives real-time status notification via Socket.io
+Step 16 → SLA timer runs in background via BullMQ
+Step 17 → If 80% SLA elapsed → warning email sent via Nodemailer
+Step 18 → If SLA breached → auto-escalation triggered up the chain
+Step 19 → Authority uploads After photo as resolution proof
+Step 20 → Status updated to Resolved → map marker turns 🟢
+Step 21 → Citizen receives resolution notification with before/after proof
+Step 22 → If unresolved 30+ days → citizen uses /rti to generate RTI letter
+Step 23 → Admin generates weekly summary at /admin/weekly-summary for Commissioner
 ```
 
 ---
 
-## 10. Technology Stack
+## 11. Technology Stack
 
 ### Frontend
 
@@ -331,10 +417,11 @@ Step 19 → Citizen receives resolution notification with before/after proof
 | shadcn/ui (Radix primitives) | Accessible UI component library |
 | React Leaflet | Interactive civic map |
 | Zustand | Lightweight global state management |
-| Socket.io Client | Real-time WebSocket communication |
+| Socket.io Client | Real-time WebSocket (`autoConnect: false`, lazy connect) |
 | Recharts | Analytics charts and dashboards |
 | jsPDF | PDF report generation |
 | Lucide React | Icon library |
+| next/image | Optimized image rendering (Navbar.png logo) |
 | Clerk (`@clerk/nextjs`) | Authentication and session management |
 
 ### Backend
@@ -350,6 +437,7 @@ Step 19 → Citizen receives resolution notification with before/after proof
 | Multer | Multipart image upload handling |
 | Mongoose | MongoDB ODM |
 | Helmet + CORS + Morgan | Security and logging middleware |
+| Gemini 1.5 Flash API | AI categorization, RTI letters, weekly summaries |
 
 ### Infrastructure
 
@@ -361,10 +449,11 @@ Step 19 → Citizen receives resolution notification with before/after proof
 | Backend Deployment | Railway (recommended — supports Socket.io) |
 | Authentication | Clerk |
 | Job Queue / Cache | Redis (Upstash or Railway Redis) |
+| AI | Google Gemini 1.5 Flash (REST API) |
 
 ---
 
-## 11. Project Structure
+## 12. Project Structure
 
 ```
 NagarWatch/
@@ -372,70 +461,100 @@ NagarWatch/
 ├── .gitignore
 │
 ├── client/                   ← Next.js 16 frontend
+│   ├── public/
+│   │   ├── Navbar.png        ← Brand navbar logo
+│   │   └── favicon.png       ← Browser tab favicon
 │   └── src/
 │       ├── app/
-│       │   ├── (admin)/
-│       │   │   └── admin/
-│       │   │       └── admin-dashboard/page.tsx    # /admin/admin-dashboard
-│       │   ├── (authority)/
-│       │   │   └── authority/
-│       │   │       ├── authority-dashboard/page.tsx # /authority/authority-dashboard
-│       │   │       └── complaints/
-│       │   │           ├── page.tsx                # /authority/complaints
-│       │   │           └── [id]/page.tsx           # /authority/complaints/:id
-│       │   ├── (citizen)/
-│       │   │   ├── dashboard/page.tsx              # /dashboard
-│       │   │   ├── submit/page.tsx                 # /submit
-│       │   │   └── citizen/
-│       │   │       └── complaints/page.tsx         # /citizen/complaints
-│       │   ├── (public)/
-│       │   │   ├── complaints/
-│       │   │   │   ├── page.tsx                    # /complaints (public feed)
-│       │   │   │   └── [id]/page.tsx               # /complaints/:id
-│       │   │   └── map/page.tsx                    # /map
-│       │   ├── sign-in/                            # Clerk sign-in
-│       │   ├── sign-up/                            # Clerk sign-up
-│       │   ├── unauthorized/                       # 403 page
-│       │   ├── layout.tsx                          # Root layout
-│       │   ├── page.tsx                            # Landing page
-│       │   └── globals.css                         # Brand token CSS variables
+│       │   ├── layout.tsx                          ← Root layout (favicon meta + Clerk)
+│       │   ├── page.tsx                            ← Landing page (hero, stats, features)
+│       │   ├── globals.css                         ← Brand token CSS variables
+│       │   ├── not-found.tsx                       ← 404 page
+│       │   ├── favicon.ico                         ← Default Next.js favicon (fallback)
+│       │   │
+│       │   ├── (admin)/                            ← Admin route group
+│       │   │   ├── layout.tsx                      ← Admin auth guard
+│       │   │   ├── admin-dashboard/page.tsx         ← /admin-dashboard
+│       │   │   ├── admin/weekly-summary/page.tsx   ← /admin/weekly-summary (AI digest)
+│       │   │   ├── users/page.tsx                  ← /users
+│       │   │   └── wards/page.tsx                  ← /wards
+│       │   │
+│       │   ├── (authority)/                        ← Authority route group
+│       │   │   ├── layout.tsx                      ← Authority auth guard
+│       │   │   ├── authority-dashboard/page.tsx    ← /authority-dashboard
+│       │   │   ├── authority/complaints/page.tsx   ← /authority/complaints
+│       │   │   └── analytics/page.tsx              ← /analytics
+│       │   │
+│       │   ├── (citizen)/                          ← Citizen route group
+│       │   │   ├── layout.tsx                      ← Citizen auth guard
+│       │   │   ├── dashboard/page.tsx              ← /dashboard
+│       │   │   ├── submit/page.tsx                 ← /submit
+│       │   │   ├── rti/page.tsx                    ← /rti (RTI letter generator)
+│       │   │   └── citizen/complaints/page.tsx     ← /citizen/complaints
+│       │   │
+│       │   ├── (public)/                           ← Public route group (no auth)
+│       │   │   ├── complaints/page.tsx             ← /complaints
+│       │   │   ├── complaints/[id]/page.tsx        ← /complaints/:id
+│       │   │   └── map/page.tsx                    ← /map
+│       │   │
+│       │   ├── sign-in/                            ← Clerk sign-in
+│       │   ├── sign-up/                            ← Clerk sign-up
+│       │   └── unauthorized/                       ← 403 page
+│       │
 │       ├── components/
-│       │   ├── complaints/   # StatusTimeline, SLATimer, cards
-│       │   ├── layout/       # Navbar
-│       │   ├── map/          # CivicMap (Leaflet, dynamic import)
-│       │   ├── providers/    # AppProviders.tsx (Zustand + Socket init)
-│       │   └── ui/           # shadcn components
+│       │   ├── complaints/
+│       │   │   ├── AICategorizeBadge.tsx           ← Gemini AI category suggest
+│       │   │   └── StatusTimeline.tsx
+│       │   ├── layout/
+│       │   │   └── Navbar.tsx                      ← Navbar with Navbar.png logo
+│       │   ├── map/
+│       │   │   └── CivicMap.tsx                    ← Leaflet map (dynamic import)
+│       │   ├── providers/
+│       │   │   └── AppProviders.tsx                ← Zustand + Socket init
+│       │   └── ui/                                 ← shadcn components
+│       │
 │       ├── hooks/
-│       │   ├── useAuthToken.ts   # Syncs Clerk JWT → Axios Bearer header
-│       │   └── useSocket.ts      # Socket.IO connection
+│       │   ├── useAuthToken.ts                     ← Syncs Clerk JWT → Axios Bearer
+│       │   └── useSocket.ts                        ← Lazy Socket.io connect (isLoaded guard)
+│       │
 │       ├── lib/
-│       │   ├── api.ts            # Axios instance + all API methods
-│       │   └── utils.ts          # Formatters, color helpers
+│       │   ├── api.ts                              ← Axios instance + all API methods incl. aiAPI
+│       │   ├── socket.ts                           ← Socket.io client (autoConnect: false)
+│       │   └── utils.ts                            ← Formatters, color helpers
+│       │
 │       ├── store/
-│       │   ├── complaintStore.ts # Zustand complaint state
-│       │   └── userStore.ts      # Zustand user state
+│       │   ├── complaintStore.ts
+│       │   ├── notificationStore.ts
+│       │   └── userStore.ts
+│       │
 │       └── types/
-│           └── complaint.ts      # TypeScript interfaces
+│           └── complaint.ts
 │
 └── server/                   ← Express + TypeScript backend
     └── src/
-        ├── config/           # DB, Redis, Cloudinary config
-        ├── jobs/             # BullMQ: SLA checker, escalation engine
-        ├── middleware/       # Clerk auth, role guards
+        ├── index.ts          ← Entry point (registers /ai route)
+        ├── config/           ← DB, Redis, Cloudinary config
+        ├── jobs/             ← BullMQ: SLA checker, escalation engine
+        ├── middleware/
+        │   ├── auth.ts       ← requireAuth, requireRole (Clerk)
+        │   └── errorHandler.ts
         ├── models/
-        │   ├── Complaint.ts  # Core complaint schema (GeoJSON, SLA, statusHistory)
-        │   ├── User.ts       # User profile schema
-        │   ├── Ward.ts       # Ward/district schema (GeoJSON polygon)
+        │   ├── Complaint.ts  ← Core complaint schema (GeoJSON, SLA, statusHistory)
+        │   ├── User.ts
+        │   ├── Ward.ts       ← GeoJSON polygon schema
         │   └── Notification.ts
-        ├── routes/           # Express route handlers
-        ├── services/         # Business logic (priority scoring, SLA calc)
-        ├── socket/           # Socket.IO event handlers
-        └── index.ts          # Server entry point
+        ├── routes/
+        │   ├── complaints.ts
+        │   ├── users.ts
+        │   ├── wards.ts
+        │   └── ai.ts         ← POST /ai/rti, /ai/categorize, /ai/weekly-summary
+        ├── services/         ← Priority scoring, SLA calculation
+        └── socket/           ← Socket.IO event handlers
 ```
 
 ---
 
-## 12. Getting Started
+## 13. Getting Started
 
 ### Prerequisites
 - Node.js 20+
@@ -443,12 +562,14 @@ NagarWatch/
 - Cloudinary account
 - Clerk account
 - Redis (Upstash for cloud, or local for dev)
+- Google Gemini API key (free at [aistudio.google.com](https://aistudio.google.com))
 
 ### Environment Variables
 
 **`server/.env`**
 ```env
 PORT=5000
+CLIENT_URL=http://localhost:3000
 MONGODB_URI=your_mongodb_atlas_uri
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
@@ -457,6 +578,7 @@ CLERK_SECRET_KEY=your_clerk_secret_key
 REDIS_URL=your_redis_url
 EMAIL_USER=your_email
 EMAIL_PASS=your_email_password
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 **`client/.env.local`**
@@ -499,21 +621,57 @@ npm run dev:client   # Next.js app   → http://localhost:3000
 
 ---
 
-## 13. Future Enhancements (Phase 2)
+## 14. Known Issues & Fixes
 
-| Feature | Description |
-|---|---|
-| Gemini AI Categorization | Auto-categorize complaints, extract keywords, suggest actions |
-| Sarvam AI Translation | Hindi and Marathi complaint input → English processing |
-| Smart Duplicate Detection | Cohere NLP similarity matching in addition to geospatial check |
-| RTI Letter Generator | Auto-generate RTI Act 2005 letters for complaints unresolved 30+ days |
-| Weekly Civic Summary | Gemini generates weekly admin digest emailed to Commissioner |
-| Predictive Analytics | Trend forecasting by ward, category, and season |
-| Mobile App | React Native citizen app with push notifications |
+### Issue 1: Route Group Path Collisions
+**Problem:** Next.js App Router route groups `(citizen)`, `(authority)`, and `(admin)` are URL-transparent. Having identically named folders inside different groups creates path conflicts.
+
+**Fix:** Each role's routes use unique path prefixes:
+- Citizen: `/dashboard`, `/submit`, `/rti`, `/citizen/complaints`
+- Authority: `/authority-dashboard`, `/authority/complaints`, `/analytics`
+- Admin: `/admin-dashboard`, `/admin/weekly-summary`, `/users`, `/wards`
+
+### Issue 2: `AppProviders` Import Error
+**Problem:** `AppProviders` was exported as a named export but imported as a default export.
+
+**Fix:** Changed to `export default function AppProviders` and updated all import sites.
+
+### Issue 3: Socket.io `xhr poll error`
+**Problem:** `socket.io-client` was initialized with `autoConnect: true`, causing it to attempt connection on import — before the Express server was running.
+
+**Fix applied in `client/src/lib/socket.ts`:**
+- `autoConnect: false` — socket never connects on import
+- Added explicit `connectSocket()` function called only from `useSocket()` hook
+- `transports: ["websocket", "polling"]` — tries WebSocket first, avoids XHR polling errors
+- Connection errors log as `console.debug` (grey) not `console.error` (red)
+- `useSocket.ts` waits for `isLoaded` from Clerk before connecting
+
+### Issue 4: Duplicate `package-lock.json`
+**Problem:** Both `client/` and `server/` had their own `package-lock.json` which conflicted with the root monorepo setup.
+
+**Fix:** Added `client/package-lock.json` and `server/package-lock.json` to `.gitignore`; only root `package-lock.json` is tracked.
+
+### Issue 5: Navbar Logo Not Showing
+**Problem:** Navbar used a `<MapPin />` icon + text instead of the brand logo image.
+
+**Fix:** Replaced with `next/image` `<Image src="/Navbar.png" />` with `priority` flag, `h-14` height, and navbar expanded to `h-20` for breathing room.
 
 ---
 
-## 14. Expected Impact
+## 15. Future Enhancements (Phase 2)
+
+| Feature | Description |
+|---|---|
+| Sarvam AI Translation | Hindi and Marathi complaint input → English processing |
+| Smart Duplicate Detection | Cohere NLP similarity matching in addition to geospatial check |
+| Predictive Analytics | Trend forecasting by ward, category, and season |
+| Mobile App | React Native citizen app with push notifications |
+| Ward Boundary Drawing | Admin polygon drawing tool for ward configuration |
+| PDF Report Export | Scheduled auto-email of PDF performance reports to Commissioner |
+
+---
+
+## 16. Expected Impact
 
 NagarWatch aims to:
 
@@ -521,14 +679,15 @@ NagarWatch aims to:
 - **Increase transparency** through proof-based resolution and public map visibility
 - **Reduce duplicate complaints** through geospatial detection (50m radius)
 - **Enhance accountability** via SLA enforcement and escalation chains
-- **Enable data-driven governance** through ward-level analytics and PDF reports
+- **Enable data-driven governance** through ward-level analytics and AI weekly summaries
+- **Empower citizens legally** via Gemini-generated RTI Act 2005 letters
 - **Improve public trust** in local administration
 
-The platform transforms traditional complaint reporting into a transparent, community-driven, and real-time civic governance ecosystem.
+The platform transforms traditional complaint reporting into a transparent, community-driven, AI-assisted, and real-time civic governance ecosystem.
 
 ---
 
-## 15. Contributing
+## 17. Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
@@ -540,6 +699,6 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ---
 
-## 16. License
+## 18. License
 
 MIT License © 2026 [Akshat Kardak](https://github.com/AkshatKardak)
