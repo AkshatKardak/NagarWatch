@@ -1,5 +1,9 @@
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+
+// Load .env first, then .env.local overrides (mirrors Next.js convention)
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
 
 import cors from "cors";
 import express from "express";
@@ -43,7 +47,7 @@ initSocket(server);
 async function bootstrap(): Promise<void> {
   await connectDB();
   initWorkers();
-  initWeeklyEmailScheduler(); // ⏰ Fires every Monday 08:00 AM
+  initWeeklyEmailScheduler();
 
   server.listen(port, () => {
     console.log(`NagarWatch server running on port ${port}`);
