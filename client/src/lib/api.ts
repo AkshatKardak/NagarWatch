@@ -69,6 +69,38 @@ export interface WardResponse {
   ward: IWard;
 }
 
+// ─── AI Feature Response Types ────────────────────────────────────────────────
+export interface RTIResponse {
+  success: true;
+  letter: string;
+  daysPending: number;
+  complaint: { title: string; id: string };
+}
+
+export interface CategorizeResponse {
+  success: true;
+  category: string;
+  priority: string;
+  keywords: string[];
+  suggestedAction: string;
+  estimatedSLAHours: number;
+  confidence: number;
+}
+
+export interface WeeklySummaryResponse {
+  success: true;
+  summary: string;
+  stats: {
+    newComplaints: number;
+    resolved: number;
+    inProgress: number;
+    pending: number;
+    breached: number;
+    categoryBreakdown: Array<{ _id: string; count: number }>;
+  };
+  period: { from: string; to: string };
+}
+
 const api = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1`,
   withCredentials: true,
@@ -133,6 +165,22 @@ export const wardsAPI = {
   update: (id: string, data: Partial<IWard>): Promise<AxiosResponse<WardResponse>> =>
     api.put(`/wards/${id}`, data),
   delete: (id: string): Promise<AxiosResponse<{ success: true; message: string }>> => api.delete(`/wards/${id}`),
+};
+
+export const aiAPI = {
+  generateRTI: (data: {
+    complaintId: string;
+    applicantName: string;
+    applicantAddress: string;
+    applicantPhone?: string;
+  }): Promise<AxiosResponse<RTIResponse>> => api.post("/ai/rti", data),
+
+  categorize: (data: {
+    title: string;
+    description: string;
+  }): Promise<AxiosResponse<CategorizeResponse>> => api.post("/ai/categorize", data),
+
+  weeklySummary: (): Promise<AxiosResponse<WeeklySummaryResponse>> => api.post("/ai/weekly-summary"),
 };
 
 export default api;

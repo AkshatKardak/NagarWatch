@@ -11,6 +11,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import complaintRoutes from "./routes/complaints";
 import userRoutes from "./routes/users";
 import wardRoutes from "./routes/wards";
+import aiRoutes from "./routes/ai";
 import { initWorkers } from "./jobs/slaWorker";
 import { initSocket } from "./socket";
 
@@ -31,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1/complaints", complaintRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/wards", wardRoutes);
+app.use("/api/v1/ai", aiRoutes);
 
 app.use(errorHandler);
 
