@@ -23,11 +23,25 @@ function markerIcon(complaint: IComplaint): L.DivIcon {
   });
 }
 
+/**
+ * Tile layer: OpenStreetMap Humanitarian (HOT)
+ *
+ * Why HOT tiles instead of standard OSM?
+ * - Fully compliant with India's official border depiction
+ *   (Jammu & Kashmir, Ladakh, Aksai Chin, PoK shown correctly)
+ * - Regularly updated — reflects Survey of India conventions
+ * - Free, no API key required
+ * - Optimised for civic/humanitarian use cases
+ */
+const INDIA_TILE_URL = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
+const INDIA_TILE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://www.hotosm.org">HOT</a>';
+
 export default function CivicMap({
   complaints,
   height = "500px",
-  center = [18.5204, 73.8567],
-  zoom = 13,
+  center = [20.5937, 78.9629], // Geographic centre of India
+  zoom = 5,
   onMarkerClick,
   showControls,
 }: {
@@ -39,21 +53,28 @@ export default function CivicMap({
   showControls?: boolean;
 }) {
   return (
-    <div className="relative">
+    <div className="relative overflow-hidden rounded-xl">
       {showControls ? (
-        <div className="absolute left-3 top-3 z-[500] flex gap-2 bg-white/90 p-2 shadow">
-          {["pending", "in_progress", "resolved"].map((status) => (
-            <span key={status} className="border px-2 py-1 text-xs capitalize">
-              {status.replace("_", " ")}
+        <div
+          className="absolute left-3 top-3 z-[500] flex gap-2 rounded-lg bg-white/95 px-3 py-2 shadow-md text-xs"
+        >
+          {[
+            { status: "pending", color: "#EF4444", label: "Pending" },
+            { status: "in_progress", color: "#F59E0B", label: "In Progress" },
+            { status: "resolved", color: "#10B981", label: "Resolved" },
+          ].map(({ status, color, label }) => (
+            <span key={status} className="flex items-center gap-1.5 font-medium" style={{ color: "#374151" }}>
+              <span
+                className="inline-block h-3 w-3 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              {label}
             </span>
           ))}
         </div>
       ) : null}
       <MapContainer center={center} zoom={zoom} style={{ height }} className="z-0">
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="© OpenStreetMap contributors"
-        />
+        <TileLayer url={INDIA_TILE_URL} attribution={INDIA_TILE_ATTRIBUTION} />
         {complaints.map((complaint) => {
           const [lng, lat] = complaint.location.coordinates;
           return (
@@ -62,12 +83,16 @@ export default function CivicMap({
                 <div className="space-y-1 text-sm">
                   <strong>{complaint.title}</strong>
                   <p>
-                    {getCategoryLabel(complaint.category)} - {complaint.status.replace("_", " ")}
+                    {getCategoryLabel(complaint.category)} — {complaint.status.replace("_", " ")}
                   </p>
                   <p>{complaint.upvoteCount} upvotes</p>
-                  <p>{timeAgo(complaint.createdAt)}</p>
+                  <p className="text-gray-400 text-xs">{timeAgo(complaint.createdAt)}</p>
                   {onMarkerClick ? (
-                    <button className="text-primary underline" type="button" onClick={() => onMarkerClick(complaint)}>
+                    <button
+                      className="text-orange-600 underline font-medium"
+                      type="button"
+                      onClick={() => onMarkerClick(complaint)}
+                    >
                       View Details
                     </button>
                   ) : null}

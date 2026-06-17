@@ -1,27 +1,22 @@
-import nodemailer from "nodemailer";
-import type SMTPTransport from "nodemailer/lib/smtp-transport";
+import { Resend } from "resend";
 
-const emailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
-const dashboardUrl = `${process.env.CLIENT_URL || "http://localhost:3000"}`;
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-} as SMTPTransport.Options);
+const resend = new Resend(process.env.RESEND_API_KEY);
+const emailConfigured = Boolean(process.env.RESEND_API_KEY);
+const FROM_ADDRESS = process.env.EMAIL_FROM || "NagarWatch <noreply@yourdomain.com>";
+const dashboardUrl = process.env.CLIENT_URL || "http://localhost:3000";
 
 if (emailConfigured) {
-  console.log("Email notifications configured");
+  console.log("Email notifications configured (Resend)");
 } else {
-  console.warn("Email not configured - notifications will be skipped");
+  console.warn("Email not configured - notifications will be skipped (add RESEND_API_KEY)");
 }
 
 function cardHtml(title: string, body: string): string {
   return `
-    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-      <div style="max-width:640px;margin:0 auto;border:1px solid #ECE7DE;border-radius:10px;overflow:hidden">
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#F9F7F4;font-family:Arial,sans-serif">
+      <div style="max-width:640px;margin:32px auto;border:1px solid #ECE7DE;border-radius:10px;overflow:hidden;background:#fff">
         <div style="background:#D95D0F;padding:20px 24px">
           <h1 style="margin:0;color:#fff;font-size:20px">NagarWatch</h1>
           <p style="margin:4px 0 0;color:#FFE0CC;font-size:13px">Civic Issue Reporting Platform</p>
@@ -30,9 +25,9 @@ function cardHtml(title: string, body: string): string {
           <h2 style="margin-top:0;color:#111827;font-size:18px">${title}</h2>
           ${body}
           <div style="margin-top:28px">
-            <a href="${dashboardUrl}/admin-dashboard"
+            <a href="${dashboardUrl}"
                style="background:#D95D0F;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold">
-              Open Admin Dashboard
+              Open NagarWatch
             </a>
           </div>
         </div>
@@ -40,7 +35,8 @@ function cardHtml(title: string, body: string): string {
           <p style="margin:0;font-size:11px;color:#9CA3AF">This is an automated message from NagarWatch. Do not reply.</p>
         </div>
       </div>
-    </div>
+    </body>
+    </html>
   `;
 }
 
@@ -52,8 +48,8 @@ export async function sendSLAWarning(
     console.log(`[EMAIL MOCK] SLA warning for ${complaint.id}`);
     return;
   }
-  await transporter.sendMail({
-    from: `"NagarWatch" <${process.env.EMAIL_USER}>`,
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
     to: authorityEmail,
     subject: `⚠️ SLA Warning - Action Required: ${complaint.title}`,
     html: cardHtml(
@@ -70,7 +66,8 @@ export async function sendSLAWarning(
       `
     ),
   });
-  console.log(`SLA warning email sent for complaint ${complaint.id}`);
+  if (error) console.error(`Resend SLA warning error for ${complaint.id}:`, error);
+  else console.log(`SLA warning email sent for complaint ${complaint.id}`);
 }
 
 export async function sendEscalationEmail(
@@ -83,8 +80,8 @@ export async function sendEscalationEmail(
     return;
   }
   const escalationMeaning = level === 1 ? "Zonal Head" : "Commissioner";
-  await transporter.sendMail({
-    from: `"NagarWatch" <${process.env.EMAIL_USER}>`,
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
     to: toEmail,
     subject: `🚨 Escalation Level ${level} - ${complaint.title}`,
     html: cardHtml(
@@ -100,7 +97,8 @@ export async function sendEscalationEmail(
       `
     ),
   });
-  console.log(`Escalation email sent for complaint ${complaint.id} at level ${level}`);
+  if (error) console.error(`Resend escalation error for ${complaint.id}:`, error);
+  else console.log(`Escalation email sent for complaint ${complaint.id} at level ${level}`);
 }
 
 export async function sendResolutionEmail(
@@ -111,8 +109,8 @@ export async function sendResolutionEmail(
     console.log(`[EMAIL MOCK] Resolution email for ${complaint.id}`);
     return;
   }
-  await transporter.sendMail({
-    from: `"NagarWatch" <${process.env.EMAIL_USER}>`,
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
     to: citizenEmail,
     subject: `✅ Your Complaint Has Been Resolved - NagarWatch`,
     html: cardHtml(
@@ -128,13 +126,10 @@ export async function sendResolutionEmail(
       `
     ),
   });
-  console.log(`Resolution email sent for complaint ${complaint.id}`);
+  if (error) console.error(`Resend resolution error for ${complaint.id}:`, error);
+  else console.log(`Resolution email sent for complaint ${complaint.id}`);
 }
 
-/**
- * Sends the weekly civic summary digest to the Commissioner.
- * Called automatically every Monday at 8 AM by the weekly scheduler.
- */
 export async function sendWeeklySummaryEmail(
   commissionerEmail: string,
   summaryMarkdown: string,
@@ -151,14 +146,13 @@ export async function sendWeeklySummaryEmail(
     return;
   }
 
-  // Convert markdown bold (**text**) and headers (## text) to basic HTML
   const bodyHtml = summaryMarkdown
     .replace(/## (.+)/g, "<h3 style='color:#D95D0F;margin:20px 0 8px'>$1</h3>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
 
-  await transporter.sendMail({
-    from: `"NagarWatch" <${process.env.EMAIL_USER}>`,
+  const { error } = await resend.emails.send({
+    from: FROM_ADDRESS,
     to: commissionerEmail,
     subject: `📊 NagarWatch Weekly Civic Summary — ${stats.weekLabel}`,
     html: cardHtml(
@@ -191,5 +185,6 @@ export async function sendWeeklySummaryEmail(
       `
     ),
   });
-  console.log(`Weekly summary email sent to ${commissionerEmail} for ${stats.weekLabel}`);
+  if (error) console.error(`Resend weekly summary error:`, error);
+  else console.log(`Weekly summary email sent to ${commissionerEmail} for ${stats.weekLabel}`);
 }
