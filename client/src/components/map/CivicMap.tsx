@@ -5,7 +5,7 @@ import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { useEffect } from "react";
 import type { IComplaint } from "@/types/complaint";
-import { getCategoryLabel, getMarkerColor, timeAgo } from "@/lib/utils";
+import { getCategoryLabel, timeAgo } from "@/lib/utils";
 
 // Fix Leaflet default marker icon broken by bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -15,18 +15,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const MAPPLS_KEY = process.env.NEXT_PUBLIC_MAPPLS_KEY;
-
-// Correct Mappls tile URL uses {s}.mapmyindia.com with subdomains a/b/c
-const TILE_URL = MAPPLS_KEY
-  ? `https://{s}.mapmyindia.com/advancedmaps/v1/${MAPPLS_KEY}/still_map/{z}/{x}/{y}.png`
-  : "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
-
-const TILE_SUBDOMAINS = MAPPLS_KEY ? ["a", "b", "c"] : ["a", "b", "c"];
-
-const TILE_ATTRIBUTION = MAPPLS_KEY
-  ? '&copy; <a href="https://mappls.com">Mappls</a> | MapmyIndia'
-  : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Humanitarian OSM Team';
+// OpenStreetMap HOT tiles — free, no key, works on all networks
+const TILE_URL = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://www.hotosm.org/">HOT</a>';
 
 /** SVG teardrop pin */
 function makePinIcon(color: string, size: "normal" | "large" = "normal"): L.DivIcon {
@@ -95,7 +87,7 @@ export default function CivicMap({
         <TileLayer
           url={TILE_URL}
           attribution={TILE_ATTRIBUTION}
-          subdomains={TILE_SUBDOMAINS}
+          subdomains={["a", "b", "c"]}
           maxZoom={18}
           tileSize={256}
         />
