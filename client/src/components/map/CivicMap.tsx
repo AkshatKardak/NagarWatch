@@ -16,10 +16,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// CartoDB Positron (light_all) — white background, dark black uniform labels for all states/cities
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// Stadia Alidade Smooth — light background with crisp dark/black labels (closest to Mappls style)
+const TILE_URL = "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>';
+  '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://openstreetmap.org">OpenStreetMap</a>';
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#EF4444",
@@ -115,8 +115,7 @@ export default function CivicMap({
         <TileLayer
           url={TILE_URL}
           attribution={TILE_ATTRIBUTION}
-          subdomains={["a", "b", "c", "d"]}
-          maxZoom={19}
+          maxZoom={20}
           tileSize={256}
         />
 
