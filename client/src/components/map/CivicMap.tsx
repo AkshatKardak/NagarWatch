@@ -17,10 +17,12 @@ L.Icon.Default.mergeOptions({
 
 const MAPPLS_KEY = process.env.NEXT_PUBLIC_MAPPLS_KEY;
 
-// Correct Mappls slippy-map tile URL (not still_map which is for static snapshots)
+// Correct Mappls tile URL uses {s}.mapmyindia.com with subdomains a/b/c
 const TILE_URL = MAPPLS_KEY
-  ? `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/map_sdk/{z}/{x}/{y}.png`
+  ? `https://{s}.mapmyindia.com/advancedmaps/v1/${MAPPLS_KEY}/still_map/{z}/{x}/{y}.png`
   : "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
+
+const TILE_SUBDOMAINS = MAPPLS_KEY ? ["a", "b", "c"] : ["a", "b", "c"];
 
 const TILE_ATTRIBUTION = MAPPLS_KEY
   ? '&copy; <a href="https://mappls.com">Mappls</a> | MapmyIndia'
@@ -93,6 +95,7 @@ export default function CivicMap({
         <TileLayer
           url={TILE_URL}
           attribution={TILE_ATTRIBUTION}
+          subdomains={TILE_SUBDOMAINS}
           maxZoom={18}
           tileSize={256}
         />
