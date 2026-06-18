@@ -16,8 +16,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// CartoDB Dark Matter — black background, white uniform labels, no API key needed
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+// CartoDB Positron (light_all) — white background, dark black uniform labels for all states/cities
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>';
 
@@ -99,8 +99,8 @@ export default function CivicMap({
 
   return (
     <div
-      className={`rounded-xl overflow-hidden border shadow-sm ${className}`}
-      style={{ height, borderColor: "#1a1a2e" }}
+      className={`rounded-xl overflow-hidden border border-slate-200 shadow-sm ${className}`}
+      style={{ height, borderColor: "#ECE7DE" }}
     >
       <MapContainer
         center={center}
@@ -128,15 +128,15 @@ export default function CivicMap({
             <div
               className="leaflet-control"
               style={{
-                background: "rgba(15,15,25,0.92)",
+                background: "rgba(255,255,255,0.95)",
                 borderRadius: 8,
                 padding: "8px 12px",
                 fontSize: 12,
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                border: "1px solid #333",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                border: "1px solid #ECE7DE",
               }}
             >
               {[
@@ -152,7 +152,7 @@ export default function CivicMap({
                     />
                     <circle cx="15" cy="15" r="6" fill="white" />
                   </svg>
-                  <span style={{ color: "#e2e8f0", fontWeight: 500 }}>{label}</span>
+                  <span style={{ color: "#111827", fontWeight: 500 }}>{label}</span>
                 </div>
               ))}
             </div>
@@ -171,11 +171,11 @@ export default function CivicMap({
               eventHandlers={onMarkerClick ? { click: () => onMarkerClick(complaint) } : {}}
             >
               <Popup>
-                <div style={{ minWidth: 170, fontFamily: "Arial, sans-serif", background: "#1e1e2e", borderRadius: 8, padding: 4 }}>
-                  <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 4px", color: "#f1f5f9" }}>
+                <div style={{ minWidth: 170, fontFamily: "Arial, sans-serif" }}>
+                  <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 4px", color: "#0f172a" }}>
                     {complaint.title}
                   </p>
-                  <p style={{ fontSize: 11, color: "#94a3b8", margin: "0 0 6px" }}>
+                  <p style={{ fontSize: 11, color: "#64748b", margin: "0 0 6px" }}>
                     {getCategoryLabel(complaint.category)} • {timeAgo(complaint.createdAt)}
                   </p>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -186,14 +186,14 @@ export default function CivicMap({
                     }}>
                       {complaint.status.replace("_", " ")}
                     </span>
-                    <span style={{ fontSize: 11, color: "#94a3b8" }}>
+                    <span style={{ fontSize: 11, color: "#64748b" }}>
                       👍 {complaint.upvoteCount}
                     </span>
                   </div>
                   {onMarkerClick && (
                     <button
                       style={{
-                        fontSize: 11, fontWeight: 700, color: "#fb923c",
+                        fontSize: 11, fontWeight: 700, color: "#D95D0F",
                         background: "none", border: "none", cursor: "pointer",
                         padding: 0, textDecoration: "underline",
                       }}
