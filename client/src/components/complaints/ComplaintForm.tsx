@@ -90,11 +90,40 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
     setStep((current) => Math.min(4, current + 1) as 1 | 2 | 3 | 4);
   }
 
+  /** Normal submit — no nearby complaints, no forceCreate flag needed */
   async function submitNow(): Promise<void> {
     setSubmitting(true);
     setError(null);
     try {
       const complaint = await submitComplaint(formData);
+      onSuccess(complaint);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Could not submit complaint");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /**
+   * Force submit — user clicked "Create New Anyway" in the NearbyComplaintsModal.
+   * Builds a fresh FormData with forceCreate="true" so the backend skips the
+   * duplicate gate and proceeds directly to upload + complaint creation.
+   */
+  async function submitNowForce(): Promise<void> {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const forceData = new FormData();
+      forceData.append("title", form.title);
+      forceData.append("description", form.description);
+      forceData.append("category", form.category);
+      forceData.append("lat", String(form.lat || ""));
+      forceData.append("lng", String(form.lng || ""));
+      forceData.append("address", form.address);
+      if (form.image) forceData.append("image", form.image);
+      forceData.append("forceCreate", "true");
+
+      const complaint = await submitComplaint(forceData);
       onSuccess(complaint);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not submit complaint");
@@ -270,7 +299,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
           }}
           onCreate={() => {
             setShowNearbyModal(false);
-            void submitNow();
+            void submitNowForce();
           }}
           onClose={() => setShowNearbyModal(false)}
         />
