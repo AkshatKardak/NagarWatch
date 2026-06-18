@@ -35,6 +35,7 @@ interface CreateComplaintBody {
   lat?: string;
   lng?: string;
   address?: string;
+  forceCreate?: string;
 }
 
 interface StatusBody {
@@ -226,7 +227,24 @@ router.post(
         return;
       }
 
+      // ── Duplicate check BEFORE Cloudinary upload ──────────────────────────
+      // Avoids wasting upload quota when a nearby active complaint already exists.
+      // The client may pass forceCreate=true (via "Create New Anyway" in the modal)
+      // to bypass this gate and proceed with a new submission.
       const nearby = await findNearbyComplaints(lng, lat, 50);
+      const forceCreate = body.forceCreate === "true";
+
+      if (nearby.length > 0 && !forceCreate) {
+        res.status(200).json({
+          success: false,
+          duplicate: true,
+          nearbyCount: nearby.length,
+          nearbyComplaints: nearby,
+        });
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       const imageUrl = await uploadImage(req.file.buffer, "nagarwatch/complaints");
       const ward = await assignWardToComplaint(lng, lat);
       const deadline = getSLADeadline(body.category);
