@@ -3,9 +3,10 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { IComplaint } from "@/types/complaint";
 import { getCategoryLabel, timeAgo } from "@/lib/utils";
+import { getSocket } from "@/lib/socket";
 
 // Fix Leaflet default marker icon broken by bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -15,15 +16,25 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// OpenStreetMap HOT tiles — free, no key, works on all networks
-const TILE_URL = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
-const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="https://www.hotosm.org/">HOT</a>';
+// Mappls key — same as UnitedImpact
+const MAPPLS_KEY = process.env.NEXT_PUBLIC_MAPPLS_KEY || "7790ee75403bdda0e09c4b54165453d0";
 
-/** SVG teardrop pin */
-function makePinIcon(color: string, size: "normal" | "large" = "normal"): L.DivIcon {
-  const w = size === "large" ? 36 : 28;
-  const h = size === "large" ? 50 : 40;
+// Use apis.mappls.com (same as UnitedImpact) — OSM HOT as fallback
+const TILE_URL = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/still_map/{z}/{x}/{y}.png`;
+const TILE_URL_FALLBACK = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
+const TILE_ATTRIBUTION = '&copy; <a href="https://mappls.com">Mappls</a> | MapmyIndia';
+const TILE_ATTRIBUTION_FALLBACK = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, HOT';
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: "#EF4444",
+  in_progress: "#F59E0B",
+  resolved: "#10B981",
+};
+
+/** Exact same SVG teardrop pin as UnitedImpact IndiaMap */
+function makeIcon(color: string, size: "normal" | "large" = "normal"): L.DivIcon {
+  const w = size === "large" ? 36 : 30;
+  const h = size === "large" ? 50 : 42;
   return L.divIcon({
     className: "",
     html: `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 30 42">
@@ -37,12 +48,28 @@ function makePinIcon(color: string, size: "normal" | "large" = "normal"): L.DivI
   });
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "#EF4444",
-  in_progress: "#F59E0B",
-  resolved: "#10B981",
-};
+/** Auto-detects tile load failure and switches to OSM fallback */
+function SmartTileLayer() {
+  const [useFallback, setUseFallback] = useState(false);
 
+  return (
+    <TileLayer
+      key={useFallback ? "osm" : "mappls"}
+      url={useFallback ? TILE_URL_FALLBACK : TILE_URL}
+      attribution={useFallback ? TILE_ATTRIBUTION_FALLBACK : TILE_ATTRIBUTION}
+      subdomains={useFallback ? ["a", "b", "c"] : []}
+      maxZoom={18}
+      tileSize={256}
+      eventHandlers={{
+        tileerror: () => {
+          if (!useFallback) setUseFallback(true);
+        },
+      }}
+    />
+  );
+}
+
+/** Fixes map rendering inside flex/hidden/tab containers */
 function InvalidateOnMount() {
   const map = useMap();
   useEffect(() => {
@@ -53,7 +80,7 @@ function InvalidateOnMount() {
 }
 
 export default function CivicMap({
-  complaints,
+  complaints: initialComplaints,
   height = "500px",
   center = [20.5937, 78.9629],
   zoom = 5,
@@ -69,9 +96,40 @@ export default function CivicMap({
   showControls?: boolean;
   className?: string;
 }) {
+  // Real-time: merge socket updates into local complaints state
+  const [complaints, setComplaints] = useState<IComplaint[]>(initialComplaints);
+
+  useEffect(() => {
+    setComplaints(initialComplaints);
+  }, [initialComplaints]);
+
+  useEffect(() => {
+    const socket = getSocket();
+
+    // New complaint filed — add pin instantly
+    socket.on("complaint:new", (complaint: IComplaint) => {
+      setComplaints((prev) => {
+        if (prev.find((c) => c._id === complaint._id)) return prev;
+        return [complaint, ...prev];
+      });
+    });
+
+    // Status update — recolor pin instantly
+    socket.on("complaint:updated", (updated: IComplaint) => {
+      setComplaints((prev) =>
+        prev.map((c) => (c._id === updated._id ? updated : c))
+      );
+    });
+
+    return () => {
+      socket.off("complaint:new");
+      socket.off("complaint:updated");
+    };
+  }, []);
+
   return (
     <div
-      className={`overflow-hidden rounded-xl border shadow-sm ${className}`}
+      className={`rounded-xl overflow-hidden border border-slate-200 shadow-sm ${className}`}
       style={{ height, borderColor: "#ECE7DE" }}
     >
       <MapContainer
@@ -83,15 +141,9 @@ export default function CivicMap({
         scrollWheelZoom
       >
         <InvalidateOnMount />
+        <SmartTileLayer />
 
-        <TileLayer
-          url={TILE_URL}
-          attribution={TILE_ATTRIBUTION}
-          subdomains={["a", "b", "c"]}
-          maxZoom={18}
-          tileSize={256}
-        />
-
+        {/* Status legend overlay */}
         {showControls && (
           <div
             className="leaflet-top leaflet-left"
@@ -120,9 +172,7 @@ export default function CivicMap({
                   <svg width="14" height="20" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 27 15 27S30 25.5 30 15C30 6.716 23.284 0 15 0z"
-                      fill={color}
-                      stroke="white"
-                      strokeWidth="3"
+                      fill={color} stroke="white" strokeWidth="3"
                     />
                     <circle cx="15" cy="15" r="6" fill="white" />
                   </svg>
@@ -133,6 +183,7 @@ export default function CivicMap({
           </div>
         )}
 
+        {/* Complaint markers */}
         {complaints.map((complaint) => {
           const [lng, lat] = complaint.location.coordinates;
           const color = STATUS_COLORS[complaint.status] ?? "#6B7280";
@@ -141,7 +192,7 @@ export default function CivicMap({
             <Marker
               key={complaint._id}
               position={[lat, lng]}
-              icon={makePinIcon(color, size)}
+              icon={makeIcon(color, size)}
               eventHandlers={onMarkerClick ? { click: () => onMarkerClick(complaint) } : {}}
             >
               <Popup>
@@ -153,18 +204,11 @@ export default function CivicMap({
                     {getCategoryLabel(complaint.category)} • {timeAgo(complaint.createdAt)}
                   </p>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        padding: "2px 8px",
-                        borderRadius: 99,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "white",
-                        background: color,
-                        textTransform: "capitalize",
-                      }}
-                    >
+                    <span style={{
+                      display: "inline-block", padding: "2px 8px", borderRadius: 99,
+                      fontSize: 10, fontWeight: 700, color: "white", background: color,
+                      textTransform: "capitalize",
+                    }}>
                       {complaint.status.replace("_", " ")}
                     </span>
                     <span style={{ fontSize: 11, color: "#64748b" }}>
@@ -174,14 +218,9 @@ export default function CivicMap({
                   {onMarkerClick && (
                     <button
                       style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "#D95D0F",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
-                        textDecoration: "underline",
+                        fontSize: 11, fontWeight: 700, color: "#D95D0F",
+                        background: "none", border: "none", cursor: "pointer",
+                        padding: 0, textDecoration: "underline",
                       }}
                       type="button"
                       onClick={() => onMarkerClick(complaint)}
