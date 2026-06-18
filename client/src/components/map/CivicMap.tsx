@@ -15,20 +15,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-/**
- * Mappls (MapmyIndia) tile layer
- * - Official Indian government-backed mapping API
- * - Correct Indian political borders: J&K, Ladakh, PoK, Aksai Chin, Arunachal Pradesh
- * - Set NEXT_PUBLIC_MAPPLS_KEY in client/.env.local
- * - Free tier: https://about.mappls.com/api/
- */
-const MAPPLS_KEY =
-  process.env.NEXT_PUBLIC_MAPPLS_KEY || "7790ee75403bdda0e09c4b54165453d0";
+const MAPPLS_KEY = process.env.NEXT_PUBLIC_MAPPLS_KEY;
 
-const MAPPLS_URL = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/still_map/{z}/{x}/{y}.png`;
-const MAPPLS_ATTRIBUTION = '&copy; <a href="https://mappls.com">Mappls</a> | MapmyIndia';
+// Correct Mappls slippy-map tile URL (not still_map which is for static snapshots)
+const TILE_URL = MAPPLS_KEY
+  ? `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/map_sdk/{z}/{x}/{y}.png`
+  : "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
 
-/** SVG teardrop pin — same style as UnitedImpact IndiaMap */
+const TILE_ATTRIBUTION = MAPPLS_KEY
+  ? '&copy; <a href="https://mappls.com">Mappls</a> | MapmyIndia'
+  : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Humanitarian OSM Team';
+
+/** SVG teardrop pin */
 function makePinIcon(color: string, size: "normal" | "large" = "normal"): L.DivIcon {
   const w = size === "large" ? 36 : 28;
   const h = size === "large" ? 50 : 40;
@@ -51,7 +49,6 @@ const STATUS_COLORS: Record<string, string> = {
   resolved: "#10B981",
 };
 
-/** Fixes map rendering when inside flex / hidden / tab containers */
 function InvalidateOnMount() {
   const map = useMap();
   useEffect(() => {
@@ -94,13 +91,12 @@ export default function CivicMap({
         <InvalidateOnMount />
 
         <TileLayer
-          url={MAPPLS_URL}
-          attribution={MAPPLS_ATTRIBUTION}
+          url={TILE_URL}
+          attribution={TILE_ATTRIBUTION}
           maxZoom={18}
           tileSize={256}
         />
 
-        {/* Status legend overlay */}
         {showControls && (
           <div
             className="leaflet-top leaflet-left"
