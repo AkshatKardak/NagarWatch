@@ -16,14 +16,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Mappls key — same as UnitedImpact
-const MAPPLS_KEY = process.env.NEXT_PUBLIC_MAPPLS_KEY || "7790ee75403bdda0e09c4b54165453d0";
-
-// Use apis.mappls.com (same as UnitedImpact) — OSM HOT as fallback
-const TILE_URL = `https://apis.mappls.com/advancedmaps/v1/${MAPPLS_KEY}/still_map/{z}/{x}/{y}.png`;
-const TILE_URL_FALLBACK = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png";
-const TILE_ATTRIBUTION = '&copy; <a href="https://mappls.com">Mappls</a> | MapmyIndia';
-const TILE_ATTRIBUTION_FALLBACK = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, HOT';
+// CartoDB Light — clean minimal style, uniform dark-grey labels, no API key needed
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>';
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#EF4444",
@@ -46,27 +42,6 @@ function makeIcon(color: string, size: "normal" | "large" = "normal"): L.DivIcon
     iconAnchor: [w / 2, h],
     popupAnchor: [0, -h],
   });
-}
-
-/** Auto-detects tile load failure and switches to OSM fallback */
-function SmartTileLayer() {
-  const [useFallback, setUseFallback] = useState(false);
-
-  return (
-    <TileLayer
-      key={useFallback ? "osm" : "mappls"}
-      url={useFallback ? TILE_URL_FALLBACK : TILE_URL}
-      attribution={useFallback ? TILE_ATTRIBUTION_FALLBACK : TILE_ATTRIBUTION}
-      subdomains={useFallback ? ["a", "b", "c"] : []}
-      maxZoom={18}
-      tileSize={256}
-      eventHandlers={{
-        tileerror: () => {
-          if (!useFallback) setUseFallback(true);
-        },
-      }}
-    />
-  );
 }
 
 /** Fixes map rendering inside flex/hidden/tab containers */
@@ -114,7 +89,7 @@ export default function CivicMap({
       });
     });
 
-    // Status update — recolor pin instantly
+    // Status updated — recolor pin instantly
     socket.on("complaint:updated", (updated: IComplaint) => {
       setComplaints((prev) =>
         prev.map((c) => (c._id === updated._id ? updated : c))
@@ -141,7 +116,14 @@ export default function CivicMap({
         scrollWheelZoom
       >
         <InvalidateOnMount />
-        <SmartTileLayer />
+
+        <TileLayer
+          url={TILE_URL}
+          attribution={TILE_ATTRIBUTION}
+          subdomains={["a", "b", "c", "d"]}
+          maxZoom={19}
+          tileSize={256}
+        />
 
         {/* Status legend overlay */}
         {showControls && (
