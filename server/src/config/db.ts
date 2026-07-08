@@ -8,6 +8,11 @@ export async function connectDB(): Promise<void> {
     process.exit(1);
   }
 
+  console.log(
+    "Mongo URI:",
+    mongoUri.replace(/\/\/.*?:/, "//***:")
+  );
+
   try {
     await mongoose.connect(mongoUri);
     console.log("MongoDB connected");
