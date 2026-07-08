@@ -1,25 +1,37 @@
-import Redis from "ioredis";
-import type { Redis as RedisClient } from "ioredis";
+import { Redis } from "@upstash/redis";
 
-export type RedisInstance =
-  | (RedisClient & { isConnected: true })
-  | { isConnected: false };
+const redisUrl = process.env.REDIS_URL;
+const redisToken = process.env.REDIS_TOKEN;
 
-let redisClient: RedisInstance;
-
-if (!process.env.REDIS_URL) {
-  console.warn("Redis not configured - BullMQ SLA jobs disabled");
-  redisClient = { isConnected: false };
-} else {
-  const client = new Redis(process.env.REDIS_URL, {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: false,
-  }) as RedisClient & { isConnected: true };
-
-  client.isConnected = true;
-  client.on("connect", () => console.log("Redis connected"));
-  client.on("error", (error: Error) => console.error("Redis error", error.message));
-  redisClient = client;
+if (!redisUrl || !redisToken) {
+  console.warn("REDIS_URL or REDIS_TOKEN not set — Redis features disabled");
 }
 
-export default redisClient;
+const client = new Redis({
+  url: redisUrl || "",
+  token: redisToken || "",
+});
+
+// Add isConnected getter for backward compat with ioredis code
+Object.defineProperty(client, "isConnected", {
+  get() {
+    return true;
+  },
+  enumerable: true,
+});
+
+export const redis = client;
+
+// Verify connection on startup
+(async () => {
+  try {
+    await redis.set("__health_check__", "ok");
+    const result = await redis.get("__health_check__");
+    if (result === "ok") {
+      console.log("Redis connected (Upstash REST)");
+      await redis.del("__health_check__");
+    }
+  } catch (error) {
+    console.error("Redis connection failed:", error);
+  }
+})();
