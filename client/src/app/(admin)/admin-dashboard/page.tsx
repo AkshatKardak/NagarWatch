@@ -351,22 +351,26 @@ export default function AdminDashboard() {
                 <TableRow>
                   <TableHead className="text-xs font-bold text-gray-400">Ward Name</TableHead>
                   <TableHead className="text-xs font-bold text-gray-400">Tickets</TableHead>
-                  <TableHead className="text-xs font-bold text-gray-400">Est. Breach %</TableHead>
+                  <TableHead className="text-xs font-bold text-gray-400">Breach %</TableHead>
                   <TableHead className="text-right text-xs font-bold text-gray-400">Performance Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedWards.map((w) => {
-                  const estBreachPercent = w.count > 0 ? ((w.count * 3.7) % 25).toFixed(1) : "0.0"
+                  // Real breach percentage computed from actual DB data
+                  const breachPercent = w.count > 0
+                    ? ((w.breachCount / w.count) * 100).toFixed(1)
+                    : "0.0"
+                  const breachNum = w.count > 0 ? (w.breachCount / w.count) * 100 : 0
                   let statusText = "Good"
                   let badgeClass = "bg-green-100 text-green-700"
-                  if (w.count >= 25) { statusText = "Critical"; badgeClass = "bg-red-100 text-red-700" }
-                  else if (w.count >= 10) { statusText = "At Risk"; badgeClass = "bg-yellow-100 text-yellow-700" }
+                  if (breachNum >= 30) { statusText = "Critical"; badgeClass = "bg-red-100 text-red-700" }
+                  else if (breachNum >= 15) { statusText = "At Risk"; badgeClass = "bg-yellow-100 text-yellow-700" }
                   return (
                     <TableRow key={`dept-${w._id}`}>
                       <TableCell className="font-bold text-gray-900 text-xs">{w.wardName}</TableCell>
                       <TableCell className="font-semibold text-gray-700 text-xs">{w.count}</TableCell>
-                      <TableCell className="font-semibold text-red-600 text-xs">{estBreachPercent}%</TableCell>
+                      <TableCell className="font-semibold text-red-600 text-xs">{breachPercent}%</TableCell>
                       <TableCell className="text-right">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>{statusText}</span>
                       </TableCell>

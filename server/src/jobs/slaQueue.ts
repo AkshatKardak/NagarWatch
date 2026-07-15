@@ -1,5 +1,5 @@
 import { Queue, type ConnectionOptions } from "bullmq";
-import { redis, bullRedis } from "../config/redis";
+import { bullRedis } from "../config/redis";
 import { getSLABreachDelay, getSLAWarningDelay } from "../services/slaService";
 
 interface SLAJobData {

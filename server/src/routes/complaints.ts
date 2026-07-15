@@ -50,7 +50,7 @@ interface ResolveBody {
 interface AnalyticsResult {
   byCategory: { _id: string; count: number }[];
   byStatus: { _id: string; count: number }[];
-  byWard: { _id: Types.ObjectId | null; count: number; wardName?: string }[];
+  byWard: { _id: Types.ObjectId | null; count: number; wardName?: string; breachCount: number }[];
   avgResolutionHours: number;
   slaBreachRate: { total: number; breached: number; percentage: number };
   dailyTrend: { _id: string; count: number }[];
@@ -136,11 +136,24 @@ router.get(
           { $group: { _id: "$status", count: { $sum: 1 } } },
           { $sort: { count: -1 } },
         ]),
-        Complaint.aggregate<{ _id: Types.ObjectId | null; count: number; wardName?: string }>([
-          { $group: { _id: "$ward", count: { $sum: 1 } } },
+        // Per-ward: total count + real SLA breach count from DB
+        Complaint.aggregate<{ _id: Types.ObjectId | null; count: number; wardName?: string; breachCount: number }>([
+          {
+            $group: {
+              _id: "$ward",
+              count: { $sum: 1 },
+              breachCount: { $sum: { $cond: [{ $eq: ["$sla.breached", true] }, 1, 0] } },
+            },
+          },
           { $lookup: { from: "wards", localField: "_id", foreignField: "_id", as: "ward" } },
           { $unwind: { path: "$ward", preserveNullAndEmptyArrays: true } },
-          { $project: { count: 1, wardName: { $ifNull: ["$ward.name", "Unassigned"] } } },
+          {
+            $project: {
+              count: 1,
+              breachCount: 1,
+              wardName: { $ifNull: ["$ward.name", "Unassigned"] },
+            },
+          },
           { $sort: { count: -1 } },
         ]),
         Complaint.aggregate<{ avgResolutionHours: number }>([
@@ -227,10 +240,6 @@ router.post(
         return;
       }
 
-      // ── Duplicate check BEFORE Cloudinary upload ──────────────────────────
-      // Avoids wasting upload quota when a nearby active complaint already exists.
-      // The client may pass forceCreate=true (via "Create New Anyway" in the modal)
-      // to bypass this gate and proceed with a new submission.
       const nearby = await findNearbyComplaints(lng, lat, 50);
       const forceCreate = body.forceCreate === "true";
 
@@ -243,7 +252,6 @@ router.post(
         });
         return;
       }
-      // ─────────────────────────────────────────────────────────────────────
 
       const imageUrl = await uploadImage(req.file.buffer, "nagarwatch/complaints");
       const ward = await assignWardToComplaint(lng, lat);
