@@ -21,6 +21,9 @@ import { initWorkers } from "./jobs/slaWorker";
 import { initWeeklyEmailScheduler } from "./jobs/weeklyEmailScheduler";
 import { initSocket } from "./socket";
 
+import dns from "dns";
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 const app = express();
 const port = process.env.PORT || "5000";
 

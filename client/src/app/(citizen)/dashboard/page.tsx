@@ -15,6 +15,8 @@ import {
   AlertCircle,
   ChevronRight,
   Info,
+  Loader2,
+  MapPin,
 } from "lucide-react"
 
 import { useUserStore } from "@/store/userStore"
@@ -104,7 +106,6 @@ export default function CitizenDashboard() {
       await markAsRead(id)
       router.push(`/complaints/${complaintId}`)
     } catch (err) {
-      // Fallback redirect if socket/API error occurs
       router.push(`/complaints/${complaintId}`)
     }
   }
