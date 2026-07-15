@@ -12,24 +12,21 @@ const client = new Redis({
   token: redisToken || "",
 });
 
-// Add isConnected getter for backward compat with ioredis code
-Object.defineProperty(client, "isConnected", {
-  get() {
-    return true;
-  },
-  enumerable: true,
+interface RedisClient extends Redis {
+  isConnected: boolean;
+}
+
+export const redis: RedisClient = Object.assign(client, {
+  isConnected: false,
 });
 
-export const redis = client;
-
-// Verify connection on startup
 (async () => {
   try {
-    await redis.set("__health_check__", "ok");
-    const result = await redis.get("__health_check__");
+    await client.set("__health_check__", "ok");
+    const result = await client.get("__health_check__");
     if (result === "ok") {
-      console.log("Redis connected (Upstash REST)");
-      await redis.del("__health_check__");
+      console.log("Redis connected (Upstash REST — cache only, no BullMQ)");
+      await client.del("__health_check__");
     }
   } catch (error) {
     console.error("Redis connection failed:", error);
