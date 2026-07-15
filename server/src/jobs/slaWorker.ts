@@ -1,5 +1,5 @@
 import { Worker, type ConnectionOptions, type Job } from "bullmq";
-import redisClient from "../config/redis";
+import { bullRedis } from "../config/redis";
 import { Complaint } from "../models/Complaint";
 import type { IUser } from "../models/User";
 import { sendSLAWarning } from "../services/emailService";
@@ -18,12 +18,10 @@ export function initWorkers(): void {
     return;
   }
 
-  if (redisClient.isConnected === false) {
-    console.log("SLA workers not started - Redis unavailable. SLA enforcement disabled.");
+  if (!bullRedis) {
+    console.log("SLA workers not started - Redis TCP unavailable. SLA enforcement disabled.");
     return;
   }
-
-  const bullConnection = redisClient as unknown as ConnectionOptions;
 
   const worker = new Worker<SLAJobData, void, "sla_warning" | "sla_breach">(
     "sla-checks",
@@ -52,7 +50,7 @@ export function initWorkers(): void {
         await checkAndEscalate(complaintId);
       }
     },
-    { connection: bullConnection }
+    { connection: bullRedis as unknown as ConnectionOptions }
   );
 
   worker.on("completed", (job) => console.log(`SLA job ${job.id} completed`));

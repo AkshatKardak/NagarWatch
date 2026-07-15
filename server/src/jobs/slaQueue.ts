@@ -1,5 +1,5 @@
 import { Queue, type ConnectionOptions } from "bullmq";
-import redisClient from "../config/redis";
+import { redis, bullRedis } from "../config/redis";
 import { getSLABreachDelay, getSLAWarningDelay } from "../services/slaService";
 
 interface SLAJobData {
@@ -7,17 +7,14 @@ interface SLAJobData {
   type: "sla_warning" | "sla_breach";
 }
 
-const bullConnection = redisClient as unknown as ConnectionOptions;
+export const slaQueue = !bullRedis
+  ? null
+  : new Queue<SLAJobData, void, "sla_warning" | "sla_breach">("sla-checks", {
+      connection: bullRedis as unknown as ConnectionOptions,
+    });
 
-export const slaQueue =
-  redisClient.isConnected === false
-    ? null
-    : new Queue<SLAJobData, void, "sla_warning" | "sla_breach">("sla-checks", {
-        connection: bullConnection,
-      });
-
-if (redisClient.isConnected === false) {
-  console.warn("SLA queue disabled - Redis not available");
+if (!bullRedis) {
+  console.warn("SLA queue disabled - Redis TCP (BullMQ) not available");
 }
 
 export async function addSLAJob(complaintId: string, category: string): Promise<void> {
