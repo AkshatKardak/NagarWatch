@@ -2,10 +2,34 @@ import axios, { AxiosHeaders, type AxiosResponse } from "axios";
 import type { IAnalytics, IComplaint, IComplaintFilters } from "@/types/complaint";
 import type { INotification, IUser, IWard } from "@/types/user";
 
+/**
+ * Module-level token cache. Updated by setAuthToken() AND by the
+ * tokenFetcher callback whenever an actual request is fired.
+ */
 let authToken: string | null = null;
+
+/**
+ * Optional async callback set by useAuthToken so the interceptor can
+ * always request a guaranteed-fresh token directly from Clerk before
+ * attaching it to the Authorization header.
+ *
+ * Without this, a cached (potentially expired) token string could sit in
+ * `authToken` for up to 55 minutes and fail mid-session.
+ */
+let tokenFetcher: (() => Promise<string | null>) | null = null;
 
 export function setAuthToken(token: string | null): void {
   authToken = token;
+}
+
+/** Called once from useAuthToken so every axios request can get a live token. */
+export function setTokenFetcher(fn: () => Promise<string | null>): void {
+  tokenFetcher = fn;
+}
+
+export function clearTokenFetcher(): void {
+  tokenFetcher = null;
+  authToken = null;
 }
 
 export interface ListComplaintsResponse {
@@ -69,7 +93,6 @@ export interface WardResponse {
   ward: IWard;
 }
 
-// ─── AI Feature Response Types ────────────────────────────────────────────────
 export interface RTIResponse {
   success: true;
   letter: string;
@@ -106,12 +129,37 @@ const api = axios.create({
   withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-  if (authToken) {
+/**
+ * Request interceptor — runs before EVERY axios request.
+ *
+ * If a tokenFetcher is registered (i.e. the user is signed in and
+ * useAuthToken has mounted), we call it to get the freshest possible
+ * Clerk JWT and set it on both the request header AND the module cache.
+ *
+ * If tokenFetcher is not available we fall back to the last known
+ * cached `authToken` string (covers SSR-like edge cases).
+ */
+api.interceptors.request.use(async (config) => {
+  let token = authToken;
+
+  if (tokenFetcher) {
+    try {
+      const fresh = await tokenFetcher();
+      if (fresh) {
+        token = fresh;
+        authToken = fresh; // keep cache in sync
+      }
+    } catch {
+      // tokenFetcher failed — fall back to cached token
+    }
+  }
+
+  if (token) {
     const headers = AxiosHeaders.from(config.headers);
-    headers.set("Authorization", `Bearer ${authToken}`);
+    headers.set("Authorization", `Bearer ${token}`);
     config.headers = headers;
   }
+
   return config;
 });
 

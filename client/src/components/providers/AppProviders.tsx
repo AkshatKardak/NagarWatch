@@ -3,37 +3,26 @@
 import * as React from "react"
 import { useEffect } from "react"
 import { useAuth, useUser } from "@clerk/nextjs"
+import { useAuthToken } from "@/hooks/useAuthToken"
 import { useSocket } from "@/hooks/useSocket"
 import { setAuthToken, usersAPI } from "@/lib/api"
-import { useUserStore } from "@/store/userStore"
 
 interface AppProvidersProps {
   children: React.ReactNode
 }
 
 export default function AppProviders({ children }: AppProvidersProps) {
+  // 1. Register the live token fetcher into the axios interceptor
+  useAuthToken()
+
+  // 2. Socket connection
+  useSocket()
+
   const { getToken, isSignedIn } = useAuth()
   const { user } = useUser()
-  const syncUser = useUserStore((state) => state.syncUser)
 
-  // 1. Keep axios Bearer token in sync with Clerk — runs on every sign-in/out
-  useEffect(() => {
-    let active = true
-
-    async function syncToken(): Promise<void> {
-      if (isSignedIn) {
-        const token = await getToken()
-        if (active) setAuthToken(token)
-      } else {
-        setAuthToken(null)
-      }
-    }
-
-    void syncToken()
-    return () => { active = false }
-  }, [getToken, isSignedIn])
-
-  // 2. Sync user to backend — only after token is confirmed present
+  // 3. Sync user to backend — explicitly fetches a fresh token first
+  //    so this can never race against useAuthToken's async registration.
   useEffect(() => {
     if (!isSignedIn || !user) return
 
@@ -42,25 +31,19 @@ export default function AppProviders({ children }: AppProvidersProps) {
 
     async function syncUserData(): Promise<void> {
       try {
-        // Always fetch a fresh token and set it before making any API call.
-        // This eliminates the race condition where usersAPI.sync fired before
-        // the token was stored in the module-level `authToken` variable.
+        // Guarantee the token is in the cache before ANY api call fires.
         const token = await getToken()
         setAuthToken(token)
-
         await usersAPI.sync({ email, name })
-        await syncUser({ email, name })
       } catch (error) {
         console.error("Failed to sync user data:", error)
       }
     }
 
     void syncUserData()
+  // user.id is stable; avoids re-running on every render
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn, user?.id])
-
-  // 3. Socket connection
-  useSocket()
 
   return <>{children}</>
 }
