@@ -36,8 +36,9 @@ export function Sidebar({ role }: { role: UserRole }) {
   const pathname = usePathname();
 
   return (
+    // top-16 = 64px, must match navbar h-16 and layout pt-16
     <aside className="hidden w-64 shrink-0 border-r bg-white lg:block">
-      <div className="sticky top-16 space-y-1 p-4">
+      <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto space-y-1 p-4">
         {linksByRole[role].map((link) => {
           const Icon = link.icon;
           const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
@@ -46,7 +47,7 @@ export function Sidebar({ role }: { role: UserRole }) {
               key={`${link.href}-${link.label}`}
               href={link.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 text-sm transition hover:bg-muted",
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition hover:bg-muted",
                 active && "bg-primary/10 font-medium text-primary"
               )}
             >

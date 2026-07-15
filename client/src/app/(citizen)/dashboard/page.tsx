@@ -121,7 +121,7 @@ export default function CitizenDashboard() {
 
   if (!clerkLoaded || !clerkUser) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50/50">
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-gray-50/50">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="size-8 animate-spin text-primary" />
           <p className="text-sm font-semibold text-gray-500">Checking credentials...</p>
@@ -131,7 +131,7 @@ export default function CitizenDashboard() {
   }
 
   return (
-    <main className="space-y-6 p-6 max-w-7xl mx-auto pt-24 min-h-screen">
+    <main className="space-y-6">
       {/* Toast Error Alert */}
       {localError && (
         <div className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 shadow-md border border-red-700 text-sm font-medium animate-in fade-in slide-in-from-top-4 rounded-md">

@@ -45,7 +45,8 @@ export function Navbar() {
       className="fixed top-0 z-50 w-full border-b bg-white/95 shadow-sm backdrop-blur"
       style={{ borderColor: "#ECE7DE" }}
     >
-      <div className="mx-auto flex h-24 max-w-7xl items-center justify-between px-4">
+      {/* Navbar height is h-16 (64px) — must match pt-16 in layout and top-16 in sidebar */}
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
 
         {/* Logo */}
         <Link href="/" className="flex items-center">
@@ -55,7 +56,7 @@ export function Navbar() {
             width={280}
             height={72}
             priority
-            className="h-16 w-auto object-contain"
+            className="h-10 w-auto object-contain"
           />
         </Link>
 
@@ -77,7 +78,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           {isSignedIn ? (
             <>
-              {/* Notification bell — links to /notifications on click */}
+              {/* Notification bell */}
               <div className="relative">
                 <Button
                   type="button"

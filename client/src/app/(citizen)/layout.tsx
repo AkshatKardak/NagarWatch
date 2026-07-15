@@ -24,9 +24,10 @@ export default function CitizenLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
+      {/* pt-16 matches navbar h-16 (64px) so content starts below navbar */}
       <div className="flex pt-16">
         <Sidebar role="citizen" />
-        <main className="min-w-0 flex-1 p-4 lg:p-8">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );
