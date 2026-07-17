@@ -17,6 +17,7 @@ import complaintRoutes from "./routes/complaints";
 import userRoutes from "./routes/users";
 import wardRoutes from "./routes/wards";
 import aiRoutes from "./routes/ai";
+import webhookRoutes from "./routes/webhooks";
 import { initWorkers } from "./jobs/slaWorker";
 import { initWeeklyEmailScheduler } from "./jobs/weeklyEmailScheduler";
 import { initSocket } from "./socket";
@@ -35,6 +36,12 @@ app.use(
 );
 app.use(helmet());
 app.use(morgan("dev"));
+
+// ⚠️  Webhook route MUST be registered before express.json() so that
+// the raw body stream is available for Svix signature verification.
+// express.json() consumes the stream and makes rawBody unavailable.
+app.use("/api/v1/webhooks", webhookRoutes);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
