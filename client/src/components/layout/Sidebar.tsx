@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Bell, ClipboardList, FileText, LayoutDashboard, Map, Plus, Users } from "lucide-react";
+import { BarChart3, Bell, ClipboardList, FileText, LayoutDashboard, Map, Plus, Scale, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -15,19 +15,21 @@ interface SidebarLink {
 const linksByRole: Record<UserRole, SidebarLink[]> = {
   citizen: [
     { href: "/citizen/dashboard", label: "Home", icon: LayoutDashboard },
-    { href: "/citizen/submit", label: "Submit Issue", icon: Plus },
+    { href: "/citizen/submit",    label: "Submit Issue", icon: Plus },
     { href: "/citizen/complaints", label: "My Complaints", icon: FileText },
-    { href: "/citizen/dashboard", label: "Notifications", icon: Bell },
+    { href: "/notifications",     label: "Notifications", icon: Bell },
+    { href: "/map",              label: "City Map", icon: Map },
+    { href: "/rti",              label: "RTI Letter", icon: Scale },
   ],
   authority: [
-    { href: "/authority/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/authority/dashboard",  label: "Dashboard",   icon: LayoutDashboard },
     { href: "/authority/complaints", label: "All Complaints", icon: ClipboardList },
-    { href: "/authority/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/authority/analytics",  label: "Analytics",   icon: BarChart3 },
   ],
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/wards", label: "Wards", icon: Map },
-    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/wards",     label: "Wards",     icon: Map },
+    { href: "/admin/users",     label: "Users",     icon: Users },
     { href: "/admin/dashboard", label: "Analytics", icon: BarChart3 },
   ],
 };
