@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.png", type: "image/png", sizes: "any" },
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon.png", type: "image/png", sizes: "16x16" },
     ],
     apple: [
       { url: "/favicon.png", type: "image/png", sizes: "180x180" },
@@ -29,16 +31,29 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/*
-          Explicit <link> tags OVERRIDE Next.js default favicon.ico.
-          Without these, Next.js serves /app/favicon.ico (the Vercel logo) instead.
-        */}
-        <link rel="icon" type="image/png" href="/favicon.png" />
+        {/* Explicit link tags override Next.js default favicon.ico (Vercel logo) */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
         <link rel="shortcut icon" type="image/png" href="/favicon.png" />
-        <link rel="apple-touch-icon" href="/favicon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
       </head>
       <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
-        <ClerkProvider afterSignInUrl="/" afterSignUpUrl="/">
+        <ClerkProvider
+          afterSignInUrl="/"
+          afterSignUpUrl="/"
+          appearance={{
+            // Clerk-hosted pages (account portal, email templates) use favicon.png
+            layout: {
+              logoImageUrl: "/favicon.png",
+              logoLinkUrl: "/",
+              socialButtonsVariant: "iconButton",
+              socialButtonsPlacement: "top",
+            },
+            variables: {
+              colorPrimary: "#2563eb",
+            },
+          }}
+        >
           <AppProviders>{children}</AppProviders>
         </ClerkProvider>
       </body>
