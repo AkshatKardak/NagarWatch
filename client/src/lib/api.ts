@@ -177,42 +177,68 @@ api.interceptors.response.use(
 export const complaintsAPI = {
   getAll: (params?: IComplaintFilters): Promise<AxiosResponse<ListComplaintsResponse>> =>
     api.get("/complaints", { params }),
-  getById: (id: string): Promise<AxiosResponse<SingleComplaintResponse>> => api.get(`/complaints/${id}`),
+
+  getById: (id: string): Promise<AxiosResponse<SingleComplaintResponse>> =>
+    api.get(`/complaints/${id}`),
+
   getNearby: (
     lat: number,
     lng: number,
     radius?: number
   ): Promise<AxiosResponse<NearbyComplaintsResponse>> =>
     api.get("/complaints/nearby", { params: { lat, lng, radius: radius || 50 } }),
+
+  // IMPORTANT: let axios set multipart headers automatically for FormData
   create: (formData: FormData): Promise<AxiosResponse<CreateComplaintResponse>> =>
-    api.post("/complaints", formData, { headers: { "Content-Type": "multipart/form-data" } }),
+    api.post("/complaints", formData),
+
   updateStatus: (
     id: string,
     data: { status: string; note?: string }
-  ): Promise<AxiosResponse<SingleComplaintResponse>> => api.patch(`/complaints/${id}/status`, data),
-  upvote: (id: string): Promise<AxiosResponse<UpvoteResponse>> => api.post(`/complaints/${id}/upvote`),
+  ): Promise<AxiosResponse<SingleComplaintResponse>> =>
+    api.patch(`/complaints/${id}/status`, data),
+
+  upvote: (id: string): Promise<AxiosResponse<UpvoteResponse>> =>
+    api.post(`/complaints/${id}/upvote`),
+
   resolve: (id: string, formData: FormData): Promise<AxiosResponse<SingleComplaintResponse>> =>
-    api.post(`/complaints/${id}/resolve`, formData, { headers: { "Content-Type": "multipart/form-data" } }),
-  getAnalytics: (): Promise<AxiosResponse<AnalyticsResponse>> => api.get("/complaints/analytics/summary"),
+    api.post(`/complaints/${id}/resolve`, formData),
+
+  getAnalytics: (): Promise<AxiosResponse<AnalyticsResponse>> =>
+    api.get("/complaints/analytics/summary"),
 };
 
 export const usersAPI = {
   sync: (data: { email: string; name: string }): Promise<AxiosResponse<UserResponse>> =>
     api.post("/users/sync", data),
-  getMe: (): Promise<AxiosResponse<UserResponse>> => api.get("/users/me"),
-  getMyComplaints: (params?: { page?: number; limit?: number }): Promise<AxiosResponse<MyComplaintsResponse>> =>
+
+  getMe: (): Promise<AxiosResponse<UserResponse>> =>
+    api.get("/users/me"),
+
+  getMyComplaints: (
+    params?: { page?: number; limit?: number }
+  ): Promise<AxiosResponse<MyComplaintsResponse>> =>
     api.get("/users/me/complaints", { params }),
-  getNotifications: (): Promise<AxiosResponse<NotificationsResponse>> => api.get("/users/me/notifications"),
+
+  getNotifications: (): Promise<AxiosResponse<NotificationsResponse>> =>
+    api.get("/users/me/notifications"),
+
   markNotificationRead: (id: string): Promise<AxiosResponse<{ success: true }>> =>
     api.patch(`/users/me/notifications/${id}/read`),
 };
 
 export const wardsAPI = {
-  getAll: (): Promise<AxiosResponse<WardsResponse>> => api.get("/wards"),
-  create: (data: Partial<IWard>): Promise<AxiosResponse<WardResponse>> => api.post("/wards", data),
+  getAll: (): Promise<AxiosResponse<WardsResponse>> =>
+    api.get("/wards"),
+
+  create: (data: Partial<IWard>): Promise<AxiosResponse<WardResponse>> =>
+    api.post("/wards", data),
+
   update: (id: string, data: Partial<IWard>): Promise<AxiosResponse<WardResponse>> =>
     api.put(`/wards/${id}`, data),
-  delete: (id: string): Promise<AxiosResponse<{ success: true; message: string }>> => api.delete(`/wards/${id}`),
+
+  delete: (id: string): Promise<AxiosResponse<{ success: true; message: string }>> =>
+    api.delete(`/wards/${id}`),
 };
 
 export const aiAPI = {
@@ -221,14 +247,17 @@ export const aiAPI = {
     applicantName: string;
     applicantAddress: string;
     applicantPhone?: string;
-  }): Promise<AxiosResponse<RTIResponse>> => api.post("/ai/rti", data),
+  }): Promise<AxiosResponse<RTIResponse>> =>
+    api.post("/ai/rti", data),
 
   categorize: (data: {
     title: string;
     description: string;
-  }): Promise<AxiosResponse<CategorizeResponse>> => api.post("/ai/categorize", data),
+  }): Promise<AxiosResponse<CategorizeResponse>> =>
+    api.post("/ai/categorize", data),
 
-  weeklySummary: (): Promise<AxiosResponse<WeeklySummaryResponse>> => api.post("/ai/weekly-summary"),
+  weeklySummary: (): Promise<AxiosResponse<WeeklySummaryResponse>> =>
+    api.post("/ai/weekly-summary"),
 };
 
 export default api;

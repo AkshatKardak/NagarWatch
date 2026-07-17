@@ -1,7 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
 import { Router } from "express";
 import type { PipelineStage, PopulateOptions, Types } from "mongoose";
-import { Complaint, type ComplaintCategory, type ComplaintStatus, type IComplaint } from "../models/Complaint";
+import {
+  Complaint,
+  type ComplaintCategory,
+  type ComplaintStatus,
+  type IComplaint,
+} from "../models/Complaint";
 import { Notification } from "../models/Notification";
 import { User, type IUser } from "../models/User";
 import { uploadImage } from "../config/cloudinary";
@@ -73,8 +78,9 @@ function parseNumber(value: unknown): number | null {
   if (typeof value !== "string" && typeof value !== "number") {
     return null;
   }
-
-  const parsed = Number.parseFloat(String(value));
+  const str = String(value).trim();
+  if (str === "") return null;
+  const parsed = Number.parseFloat(str);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -137,15 +143,29 @@ router.get(
           { $sort: { count: -1 } },
         ]),
         // Per-ward: total count + real SLA breach count from DB
-        Complaint.aggregate<{ _id: Types.ObjectId | null; count: number; wardName?: string; breachCount: number }>([
+        Complaint.aggregate<{
+          _id: Types.ObjectId | null;
+          count: number;
+          wardName?: string;
+          breachCount: number;
+        }>([
           {
             $group: {
               _id: "$ward",
               count: { $sum: 1 },
-              breachCount: { $sum: { $cond: [{ $eq: ["$sla.breached", true] }, 1, 0] } },
+              breachCount: {
+                $sum: { $cond: [{ $eq: ["$sla.breached", true] }, 1, 0] },
+              },
             },
           },
-          { $lookup: { from: "wards", localField: "_id", foreignField: "_id", as: "ward" } },
+          {
+            $lookup: {
+              from: "wards",
+              localField: "_id",
+              foreignField: "_id",
+              as: "ward",
+            },
+          },
           { $unwind: { path: "$ward", preserveNullAndEmptyArrays: true } },
           {
             $project: {
@@ -162,7 +182,9 @@ router.get(
             $group: {
               _id: null,
               avgResolutionHours: {
-                $avg: { $divide: [{ $subtract: ["$resolvedAt", "$createdAt"] }, 3600000] },
+                $avg: {
+                  $divide: [{ $subtract: ["$resolvedAt", "$createdAt"] }, 3600000],
+                },
               },
             },
           },
@@ -198,7 +220,10 @@ router.get(
         slaBreachRate: {
           total,
           breached,
-          percentage: total === 0 ? 0 : Number(((breached / total) * 100).toFixed(2)),
+          percentage:
+            total === 0
+              ? 0
+              : Number(((breached / total) * 100).toFixed(2)),
         },
         dailyTrend,
       };
@@ -221,40 +246,58 @@ router.post(
       const body = req.body as CreateComplaintBody;
       const lat = parseNumber(body.lat);
       const lng = parseNumber(body.lng);
+      const hasCoordinates = lat !== null && lng !== null;
 
+      // Debug logging to see what the server actually received
+      console.log("complaint body", body);
+      console.log("complaint file", {
+        name: req.file?.originalname,
+        type: req.file?.mimetype,
+        size: req.file?.size,
+      });
+      console.log("req.user", req.user?._id);
+
+      // Required fields: title, description, valid category, address, and image.
+      // lat/lng are OPTIONAL — a citizen may type an address without GPS.
       if (
         !req.user ||
-        !body.title ||
-        !body.description ||
+        !body.title?.trim() ||
+        !body.description?.trim() ||
         !body.category ||
         !isCategory(body.category) ||
-        lat === null ||
-        lng === null ||
-        !body.address ||
+        !body.address?.trim() ||
         !req.file
       ) {
         res.status(400).json({
           success: false,
-          message: "title, description, category, lat, lng, address, and image are required",
+          message:
+            "title, description, category, address, and image are required",
         });
         return;
       }
 
-      const nearby = await findNearbyComplaints(lng, lat, 50);
+      // Only run nearby-duplicate check when we have real GPS coords.
       const forceCreate = body.forceCreate === "true";
-
-      if (nearby.length > 0 && !forceCreate) {
-        res.status(200).json({
-          success: false,
-          duplicate: true,
-          nearbyCount: nearby.length,
-          nearbyComplaints: nearby,
-        });
-        return;
+      if (hasCoordinates && !forceCreate) {
+        const nearby = await findNearbyComplaints(lng, lat, 50);
+        if (nearby.length > 0) {
+          res.status(200).json({
+            success: false,
+            duplicate: true,
+            nearbyCount: nearby.length,
+            nearbyComplaints: nearby,
+          });
+          return;
+        }
       }
 
-      const imageUrl = await uploadImage(req.file.buffer, "nagarwatch/complaints");
-      const ward = await assignWardToComplaint(lng, lat);
+      const imageUrl = await uploadImage(
+        req.file.buffer,
+        "nagarwatch/complaints"
+      );
+
+      // Ward assignment requires coordinates; skip gracefully when absent.
+      const ward = hasCoordinates ? await assignWardToComplaint(lng, lat) : null;
       const deadline = getSLADeadline(body.category);
       const { score, priority } = calculatePriorityScore({
         title: body.title,
@@ -270,7 +313,14 @@ router.post(
         status: "pending",
         priority,
         priorityScore: score,
-        location: { type: "Point", coordinates: [lng, lat], address: body.address },
+        location: {
+          type: "Point",
+          // Use real coords when available; [0,0] placeholder otherwise.
+          // hasCoordinates flag lets geo-queries exclude address-only entries.
+          coordinates: hasCoordinates ? [lng, lat] : [0, 0],
+          address: body.address,
+          hasCoordinates,
+        },
         images: { before: imageUrl },
         submittedBy: req.user._id,
         upvotes: [],
@@ -283,7 +333,12 @@ router.post(
           escalationLog: [],
         },
         statusHistory: [
-          { status: "pending", updatedBy: req.user._id, updatedAt: new Date(), note: "Complaint submitted" },
+          {
+            status: "pending",
+            updatedBy: req.user._id,
+            updatedAt: new Date(),
+            note: "Complaint submitted",
+          },
         ],
       });
 
@@ -299,12 +354,16 @@ router.post(
       await addSLAJob(complaint._id.toString(), body.category);
       getIO().to("civic-map").emit("new_complaint", complaint);
 
-      console.log(`New complaint submitted: ${complaint._id} in ward ${ward?.name || "unassigned"}`);
+      console.log(
+        `New complaint submitted: ${complaint._id} in ward ${
+          ward?.name || "unassigned"
+        }`
+      );
       res.status(201).json({
         success: true,
         complaint,
-        nearbyCount: nearby.length,
-        nearbyComplaints: nearby,
+        nearbyCount: 0,
+        nearbyComplaints: [],
       });
     } catch (error) {
       next(error);
@@ -312,110 +371,132 @@ router.post(
   }
 );
 
-router.get("/", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const page = toPositiveInt(req.query.page, 1);
-    const limit = toPositiveInt(req.query.limit, 20, 50);
-    const skip = (page - 1) * limit;
-    const filter = buildComplaintFilter(req.query);
-    const lat = parseNumber(req.query.lat);
-    const lng = parseNumber(req.query.lng);
-    const radius = parseNumber(req.query.radius);
+router.get(
+  "/",
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const page = toPositiveInt(req.query.page, 1);
+      const limit = toPositiveInt(req.query.limit, 20, 50);
+      const skip = (page - 1) * limit;
+      const filter = buildComplaintFilter(req.query);
+      const lat = parseNumber(req.query.lat);
+      const lng = parseNumber(req.query.lng);
+      const radius = parseNumber(req.query.radius);
 
-    let complaints: ComplaintListItem[];
-    let total: number;
+      let complaints: ComplaintListItem[];
+      let total: number;
 
-    if (lat !== null && lng !== null && radius !== null) {
-      const basePipeline: PipelineStage[] = [
-        {
-          $geoNear: {
-            near: { type: "Point", coordinates: [lng, lat] },
-            distanceField: "distance",
-            maxDistance: radius,
-            spherical: true,
-            query: filter,
+      if (lat !== null && lng !== null && radius !== null) {
+        const basePipeline: PipelineStage[] = [
+          {
+            $geoNear: {
+              near: { type: "Point", coordinates: [lng, lat] },
+              distanceField: "distance",
+              maxDistance: radius,
+              spherical: true,
+              query: { ...filter, "location.hasCoordinates": true },
+            },
           },
-        },
-        { $sort: { priorityScore: -1, createdAt: -1 } },
-      ];
+          { $sort: { priorityScore: -1, createdAt: -1 } },
+        ];
 
-      const [items, counts] = await Promise.all([
-        Complaint.aggregate<ComplaintListItem>([...basePipeline, { $skip: skip }, { $limit: limit }]),
-        Complaint.aggregate<{ count: number }>([...basePipeline, { $count: "count" }]),
-      ]);
+        const [items, counts] = await Promise.all([
+          Complaint.aggregate<ComplaintListItem>([
+            ...basePipeline,
+            { $skip: skip },
+            { $limit: limit },
+          ]),
+          Complaint.aggregate<{ count: number }>([
+            ...basePipeline,
+            { $count: "count" },
+          ]),
+        ]);
 
-      complaints = await Complaint.populate(items, complaintPopulate);
-      total = counts[0]?.count ?? 0;
-    } else {
-      const [items, count] = await Promise.all([
-        Complaint.find(filter)
-          .populate("submittedBy", "name email")
-          .populate("ward", "name")
-          .populate("assignedTo", "name")
-          .sort({ priorityScore: -1, createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean<ComplaintListItem[]>(),
-        Complaint.countDocuments(filter),
-      ]);
+        complaints = await Complaint.populate(items, complaintPopulate);
+        total = counts[0]?.count ?? 0;
+      } else {
+        const [items, count] = await Promise.all([
+          Complaint.find(filter)
+            .populate("submittedBy", "name email")
+            .populate("ward", "name")
+            .populate("assignedTo", "name")
+            .sort({ priorityScore: -1, createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean<ComplaintListItem[]>(),
+          Complaint.countDocuments(filter),
+        ]);
 
-      complaints = items;
-      total = count;
+        complaints = items;
+        total = count;
+      }
+
+      console.log(
+        `Complaint list returned page ${page} with ${complaints.length} items`
+      );
+      res.json({
+        success: true,
+        complaints,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      });
+    } catch (error) {
+      next(error);
     }
-
-    console.log(`Complaint list returned page ${page} with ${complaints.length} items`);
-    res.json({
-      success: true,
-      complaints,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    });
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-router.get("/nearby", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const lat = parseNumber(req.query.lat);
-    const lng = parseNumber(req.query.lng);
-    const radius = parseNumber(req.query.radius) ?? 50;
+router.get(
+  "/nearby",
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const lat = parseNumber(req.query.lat);
+      const lng = parseNumber(req.query.lng);
+      const radius = parseNumber(req.query.radius) ?? 50;
 
-    if (lat === null || lng === null) {
-      res.status(400).json({ success: false, message: "lat and lng are required" });
-      return;
+      if (lat === null || lng === null) {
+        res
+          .status(400)
+          .json({ success: false, message: "lat and lng are required" });
+        return;
+      }
+
+      const complaints = await findNearbyComplaints(lng, lat, radius);
+
+      console.log(`Nearby complaints returned for ${lng},${lat}`);
+      res.json({ success: true, complaints, count: complaints.length });
+    } catch (error) {
+      next(error);
     }
-
-    const complaints = await findNearbyComplaints(lng, lat, radius);
-
-    console.log(`Nearby complaints returned for ${lng},${lat}`);
-    res.json({ success: true, complaints, count: complaints.length });
-  } catch (error) {
-    next(error);
   }
-});
+);
 
-router.get("/:id", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const complaint = await Complaint.findById(req.params.id)
-      .populate("submittedBy", "name email")
-      .populate("ward", "name city")
-      .populate("assignedTo", "name email")
-      .populate("statusHistory.updatedBy", "name")
-      .lean();
+router.get(
+  "/:id",
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const complaint = await Complaint.findById(req.params.id)
+        .populate("submittedBy", "name email")
+        .populate("ward", "name city")
+        .populate("assignedTo", "name email")
+        .populate("statusHistory.updatedBy", "name")
+        .lean();
 
-    if (!complaint) {
-      res.status(404).json({ success: false, message: "Complaint not found" });
-      return;
+      if (!complaint) {
+        res
+          .status(404)
+          .json({ success: false, message: "Complaint not found" });
+        return;
+      }
+
+      console.log(`Complaint ${req.params.id} retrieved`);
+      res.json({ success: true, complaint });
+    } catch (error) {
+      next(error);
     }
-
-    console.log(`Complaint ${req.params.id} retrieved`);
-    res.json({ success: true, complaint });
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 router.patch(
   "/:id/status",
@@ -427,27 +508,36 @@ router.patch(
       const body = req.body as StatusBody;
 
       if (!req.user || !body.status || !isStatus(body.status)) {
-        res.status(400).json({ success: false, message: "Valid status is required" });
+        res
+          .status(400)
+          .json({ success: false, message: "Valid status is required" });
         return;
       }
 
       if (body.status === "resolved") {
         res.status(400).json({
           success: false,
-          message: "Use POST /:id/resolve to close complaint with proof image",
+          message:
+            "Use POST /:id/resolve to close complaint with proof image",
         });
         return;
       }
 
-      const complaint = await Complaint.findById(req.params.id).populate<{ submittedBy: IUser }>("submittedBy");
+      const complaint = await Complaint.findById(req.params.id).populate<{
+        submittedBy: IUser;
+      }>("submittedBy");
 
       if (!complaint) {
-        res.status(404).json({ success: false, message: "Complaint not found" });
+        res
+          .status(404)
+          .json({ success: false, message: "Complaint not found" });
         return;
       }
 
       if (!(complaint.status === "pending" && body.status === "in_progress")) {
-        res.status(400).json({ success: false, message: "Invalid status transition" });
+        res
+          .status(400)
+          .json({ success: false, message: "Invalid status transition" });
         return;
       }
 
@@ -468,13 +558,17 @@ router.patch(
         complaintId: complaint._id,
       });
 
-      getIO().to(`user_${complaint.submittedBy.clerkId}`).emit("status_updated", {
-        complaintId: req.params.id,
-        status: body.status,
-        updatedBy: req.user.name,
-      });
+      getIO()
+        .to(`user_${complaint.submittedBy.clerkId}`)
+        .emit("status_updated", {
+          complaintId: req.params.id,
+          status: body.status,
+          updatedBy: req.user.name,
+        });
 
-      console.log(`Complaint ${req.params.id} status updated to ${body.status} by ${req.user.name}`);
+      console.log(
+        `Complaint ${req.params.id} status updated to ${body.status} by ${req.user.name}`
+      );
       res.json({ success: true, complaint });
     } catch (error) {
       next(error);
@@ -489,19 +583,28 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
+        res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
         return;
       }
 
       const complaint = await Complaint.findById(req.params.id);
 
       if (!complaint) {
-        res.status(404).json({ success: false, message: "Complaint not found" });
+        res
+          .status(404)
+          .json({ success: false, message: "Complaint not found" });
         return;
       }
 
-      if (complaint.upvotes.some((upvote) => upvote.equals(req.user?._id))) {
-        res.status(400).json({ success: false, message: "You have already upvoted this complaint" });
+      if (
+        complaint.upvotes.some((upvote) => upvote.equals(req.user?._id))
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "You have already upvoted this complaint",
+        });
         return;
       }
 
@@ -529,9 +632,14 @@ router.post(
         let authority: IUser | null = null;
 
         if (complaint.assignedTo) {
-          authority = await User.findById(complaint.assignedTo).lean<IUser | null>();
+          authority = await User.findById(
+            complaint.assignedTo
+          ).lean<IUser | null>();
         } else if (complaint.ward) {
-          authority = await User.findOne({ role: "authority", ward: complaint.ward }).lean<IUser | null>();
+          authority = await User.findOne({
+            role: "authority",
+            ward: complaint.ward,
+          }).lean<IUser | null>();
         }
 
         if (authority) {
@@ -544,7 +652,9 @@ router.post(
         }
       }
 
-      console.log(`Complaint ${req.params.id} upvoted - new score: ${score}`);
+      console.log(
+        `Complaint ${req.params.id} upvoted - new score: ${score}`
+      );
       res.json({
         success: true,
         upvoteCount: complaint.upvoteCount,
@@ -566,28 +676,41 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
+        res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
         return;
       }
 
       if (!req.file) {
-        res.status(400).json({ success: false, message: "After image is required to resolve a complaint" });
+        res.status(400).json({
+          success: false,
+          message: "After image is required to resolve a complaint",
+        });
         return;
       }
 
       const complaint = await Complaint.findById(req.params.id);
 
       if (!complaint) {
-        res.status(404).json({ success: false, message: "Complaint not found" });
+        res
+          .status(404)
+          .json({ success: false, message: "Complaint not found" });
         return;
       }
 
       if (complaint.status === "resolved") {
-        res.status(400).json({ success: false, message: "Complaint is already resolved" });
+        res.status(400).json({
+          success: false,
+          message: "Complaint is already resolved",
+        });
         return;
       }
 
-      const afterImageUrl = await uploadImage(req.file.buffer, "nagarwatch/resolutions");
+      const afterImageUrl = await uploadImage(
+        req.file.buffer,
+        "nagarwatch/resolutions"
+      );
       complaint.images.after = afterImageUrl;
       complaint.status = "resolved";
       complaint.resolvedAt = new Date();
@@ -601,7 +724,9 @@ router.post(
 
       await complaint.save();
 
-      const submitter = await User.findById(complaint.submittedBy).lean<IUser | null>();
+      const submitter = await User.findById(
+        complaint.submittedBy
+      ).lean<IUser | null>();
 
       if (submitter && complaint.resolvedAt) {
         await sendResolutionEmail(submitter.email, {
@@ -611,14 +736,21 @@ router.post(
         });
       }
 
-      getIO().to("civic-map").emit("status_updated", { complaintId: req.params.id, status: "resolved" });
-
-      if (submitter) {
-        getIO().to(`user_${submitter.clerkId}`).emit("status_updated", {
+      getIO()
+        .to("civic-map")
+        .emit("status_updated", {
           complaintId: req.params.id,
           status: "resolved",
-          message: "Your complaint has been resolved!",
         });
+
+      if (submitter) {
+        getIO()
+          .to(`user_${submitter.clerkId}`)
+          .emit("status_updated", {
+            complaintId: req.params.id,
+            status: "resolved",
+            message: "Your complaint has been resolved!",
+          });
 
         await Notification.create({
           userId: submitter.clerkId,
