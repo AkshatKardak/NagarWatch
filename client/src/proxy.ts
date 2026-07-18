@@ -13,16 +13,31 @@ const isPublicRoute = createRouteMatcher([
   "/api/webhooks(.*)",
 ]);
 
-// Role-gated prefixes
-const isCitizenRoute   = createRouteMatcher(["/citizen(.*)", "/dashboard(.*)", "/notifications(.*)", "/rti(.*)"]);
-const isAuthorityRoute = createRouteMatcher(["/authority(.*)", "/analytics(.*)"]);
-const isAdminRoute     = createRouteMatcher(["/admin(.*)"]);
+// Role-gated prefixes — must match the REAL App Router URLs (not route-group folders)
+const isCitizenRoute = createRouteMatcher([
+  "/citizen(.*)",       // /citizen/profile, /citizen/complaints, /citizen/submit
+  "/dashboard(.*)",     // (citizen)/dashboard  → /dashboard
+  "/submit(.*)",        // (citizen)/submit     → /submit
+  "/notifications(.*)", // (citizen)/notifications → /notifications
+  "/rti(.*)",           // (citizen)/rti        → /rti
+]);
+const isAuthorityRoute = createRouteMatcher([
+  "/authority(.*)",           // /authority/... real segment pages
+  "/authority-dashboard(.*)", // (authority)/authority-dashboard → /authority-dashboard
+  "/analytics(.*)",           // (authority)/analytics → /analytics
+]);
+const isAdminRoute = createRouteMatcher([
+  "/admin(.*)",           // /admin/... real segment pages
+  "/admin-dashboard(.*)",// (admin)/admin-dashboard → /admin-dashboard
+  "/users(.*)",           // (admin)/users → /users
+  "/wards(.*)",           // (admin)/wards → /wards
+]);
 
-// Legacy URL aliases → real file-system routes
+// Backward-compat redirects: old wrong URLs → real canonical App Router URLs
 const LEGACY_REDIRECTS: Record<string, string> = {
-  "/dashboard":           "/citizen/dashboard",
-  "/authority-dashboard": "/authority/dashboard",
-  "/admin-dashboard":     "/admin/dashboard",
+  "/citizen/dashboard":   "/dashboard",            // was being used incorrectly
+  "/authority/dashboard": "/authority-dashboard",  // was being used incorrectly
+  "/admin/dashboard":     "/admin-dashboard",      // was being used incorrectly
 };
 
 export default clerkMiddleware(async (auth, req) => {
@@ -51,12 +66,12 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Signed-in user hits root / → send to correct dashboard
   if (req.nextUrl.pathname === "/") {
-    if (role === "admin")     return NextResponse.redirect(new URL("/admin/dashboard",     req.url));
-    if (role === "authority") return NextResponse.redirect(new URL("/authority/dashboard", req.url));
-    return NextResponse.redirect(new URL("/citizen/dashboard", req.url));
+    if (role === "admin")     return NextResponse.redirect(new URL("/admin-dashboard",     req.url));
+    if (role === "authority") return NextResponse.redirect(new URL("/authority-dashboard", req.url));
+    return NextResponse.redirect(new URL("/dashboard", req.url)); // citizen
   }
 
-  // Legacy redirect aliases
+  // Legacy redirect aliases (old wrong paths → canonical URLs)
   const legacy = LEGACY_REDIRECTS[req.nextUrl.pathname];
   if (legacy) return NextResponse.redirect(new URL(legacy, req.url));
 
