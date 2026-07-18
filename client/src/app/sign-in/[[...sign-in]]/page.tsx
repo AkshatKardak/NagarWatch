@@ -1,7 +1,7 @@
 "use client"
 
 import { SignIn } from "@clerk/nextjs"
-import { Crown, MapPin, Shield, Users, ArrowRight } from "lucide-react"
+import { Crown, Shield, Users, ArrowRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -75,7 +75,7 @@ export default function SignInPage() {
               boxShadow: "0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
             }}
           >
-            {/* Role legend — purely informational, no Clerk overlap */}
+            {/* Role legend — purely informational */}
             <div className="mb-6">
               <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">
                 Platform Roles
@@ -139,9 +139,14 @@ export default function SignInPage() {
               <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.08)" }} />
             </div>
 
-            {/* Clerk widget — isolated so it never overlaps role cards */}
+            {/* Clerk widget */}
             <div className="relative z-10">
               <SignIn
+                {/* Force email + password form on first render —
+                    without this Clerk defaults to email-link / OTP,
+                    which hides the password field until the user
+                    manually clicks "Use password instead". */}
+                preferredSignInStrategy="password"
                 appearance={{
                   variables: {
                     colorBackground: "transparent",
@@ -174,6 +179,9 @@ export default function SignInPage() {
                     identityPreviewText: "!text-white/70",
                     identityPreviewEditButton: "!text-blue-400",
                     formResendCodeLink: "!text-blue-400",
+                    // Show the password field's show/hide toggle button
+                    formFieldInputShowPasswordButton: "!text-white/40 hover:!text-white/70",
+                    formFieldInputShowPasswordIcon: "!text-white/40",
                     otpCodeFieldInput:
                       "!bg-white/5 !border !border-white/15 !text-white !rounded-xl !text-lg focus:!border-blue-400/60",
                     alertText: "!text-red-300",
