@@ -12,12 +12,12 @@ const ROLES = [
     label: "Citizen",
     icon: Users,
     description: "Report & track civic issues in your area",
-    color: "#3b82f6",
-    bg: "rgba(59,130,246,0.12)",
-    activeBg: "rgba(59,130,246,0.22)",
-    border: "rgba(59,130,246,0.25)",
-    activeBorder: "rgba(59,130,246,0.7)",
-    glow: "rgba(59,130,246,0.35)",
+    color: "#D95D0F",
+    bg: "rgba(217,93,15,0.12)",
+    activeBg: "rgba(217,93,15,0.22)",
+    border: "rgba(217,93,15,0.25)",
+    activeBorder: "rgba(217,93,15,0.75)",
+    glow: "rgba(217,93,15,0.35)",
     locked: false,
   },
   {
@@ -25,12 +25,12 @@ const ROLES = [
     label: "Authority",
     icon: Shield,
     description: "Manage & resolve ward complaints",
-    color: "#10b981",
-    bg: "rgba(16,185,129,0.12)",
-    activeBg: "rgba(16,185,129,0.22)",
-    border: "rgba(16,185,129,0.25)",
-    activeBorder: "rgba(16,185,129,0.7)",
-    glow: "rgba(16,185,129,0.35)",
+    color: "#2E6A42",
+    bg: "rgba(46,106,66,0.12)",
+    activeBg: "rgba(46,106,66,0.22)",
+    border: "rgba(46,106,66,0.25)",
+    activeBorder: "rgba(46,106,66,0.75)",
+    glow: "rgba(46,106,66,0.35)",
     locked: false,
   },
   {
@@ -38,12 +38,12 @@ const ROLES = [
     label: "Admin",
     icon: Crown,
     description: "Provisioned by system administrator",
-    color: "#f59e0b",
-    bg: "rgba(245,158,11,0.07)",
-    activeBg: "rgba(245,158,11,0.07)",
-    border: "rgba(245,158,11,0.18)",
-    activeBorder: "rgba(245,158,11,0.18)",
-    glow: "rgba(245,158,11,0.0)",
+    color: "#FDBA74",
+    bg: "rgba(253,186,116,0.07)",
+    activeBg: "rgba(253,186,116,0.07)",
+    border: "rgba(253,186,116,0.18)",
+    activeBorder: "rgba(253,186,116,0.18)",
+    glow: "rgba(253,186,116,0.0)",
     locked: true,
   },
 ]
@@ -54,19 +54,24 @@ export default function SignUpPage() {
   const [selectedRole, setSelectedRole] = useState<SelectableRoleId>("citizen")
   const [fullName, setFullName] = useState("")
 
-  // Trim the name once so the key and the metadata value are always in sync
   const trimmedName = fullName.trim()
 
   return (
     <main
       className="relative min-h-screen overflow-hidden"
       style={{
-        background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0c4a6e 70%, #0f172a 100%)",
+        background: "linear-gradient(135deg, #1A0A00 0%, #8B2500 30%, #D95D0F 60%, #2E6A42 100%)",
       }}
     >
       {/* Decorative blobs */}
-      <div className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full opacity-20 blur-3xl" style={{ background: "radial-gradient(circle, #3b82f6, transparent)" }} />
-      <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-3xl" style={{ background: "radial-gradient(circle, #06b6d4, transparent)" }} />
+      <div
+        className="pointer-events-none absolute -top-32 -right-32 h-96 w-96 rounded-full opacity-20 blur-3xl"
+        style={{ background: "radial-gradient(circle, #D95D0F, transparent)" }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-3xl"
+        style={{ background: "radial-gradient(circle, #2E6A42, transparent)" }}
+      />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center p-4 py-8">
         <div className="w-full max-w-[440px]">
@@ -75,28 +80,28 @@ export default function SignUpPage() {
           <div className="mb-6 flex flex-col items-center text-center">
             <div
               className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl shadow-2xl"
-              style={{ background: "linear-gradient(135deg, #2563eb, #0ea5e9)", boxShadow: "0 0 40px rgba(37,99,235,0.5)" }}
+              style={{ background: "linear-gradient(135deg, #8B2500, #D95D0F)", boxShadow: "0 0 40px rgba(217,93,15,0.5)" }}
             >
               <Image src="/favicon.png" alt="NagarWatch" width={36} height={36} className="rounded-xl" />
             </div>
             <h1 className="text-3xl font-black tracking-tight text-white">NagarWatch</h1>
-            <p className="mt-1.5 text-sm font-medium text-blue-200/80">Create your civic account</p>
+            <p className="mt-1.5 text-sm font-medium" style={{ color: "rgba(253,186,116,0.85)" }}>Create your civic account</p>
           </div>
 
           {/* Card */}
           <div
             className="rounded-3xl p-6"
             style={{
-              background: "rgba(255,255,255,0.05)",
+              background: "rgba(0,0,0,0.30)",
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              boxShadow: "0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+              border: "1px solid rgba(217,93,15,0.20)",
+              boxShadow: "0 32px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)",
             }}
           >
-            {/* ── Step 1: Full Name ─────────────────────────────────────── */}
+            {/* Step 1 */}
             <div className="mb-5">
-              <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">Step 1 — Your name</p>
+              <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "rgba(253,186,116,0.5)" }}>Step 1 — Your name</p>
               <div className="relative">
                 <input
                   type="text"
@@ -107,16 +112,16 @@ export default function SignUpPage() {
                   autoComplete="name"
                   className="w-full rounded-xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-white/25 transition-all focus:outline-none"
                   style={{
-                    border: trimmedName ? "1px solid rgba(37,99,235,0.55)" : "1px solid rgba(255,255,255,0.10)",
-                    boxShadow: trimmedName ? "0 0 0 3px rgba(37,99,235,0.12)" : "none",
+                    border: trimmedName ? "1px solid rgba(217,93,15,0.6)" : "1px solid rgba(255,255,255,0.10)",
+                    boxShadow: trimmedName ? "0 0 0 3px rgba(217,93,15,0.12)" : "none",
                   }}
                 />
               </div>
             </div>
 
-            {/* ── Step 2: Role Selector ────────────────────────────────── */}
+            {/* Step 2: Role Selector */}
             <div className="mb-5">
-              <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">Step 2 — Choose your role</p>
+              <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "rgba(253,186,116,0.5)" }}>Step 2 — Choose your role</p>
               <div className="grid grid-cols-3 gap-2">
                 {ROLES.map((role) => {
                   const Icon = role.icon
@@ -143,14 +148,14 @@ export default function SignUpPage() {
                       )}
                       {role.locked && (
                         <span className="absolute right-2 top-2">
-                          <Lock size={10} color="rgba(245,158,11,0.6)" />
+                          <Lock size={10} color="rgba(253,186,116,0.6)" />
                         </span>
                       )}
                       <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: active ? role.color : "rgba(255,255,255,0.08)" }}>
-                        <Icon size={14} color={active ? "white" : role.locked ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.4)"} />
+                        <Icon size={14} color={active ? "white" : role.locked ? "rgba(253,186,116,0.5)" : "rgba(255,255,255,0.4)"} />
                       </div>
                       <div>
-                        <div className="text-xs font-bold" style={{ color: active ? role.color : role.locked ? "rgba(245,158,11,0.6)" : "rgba(255,255,255,0.7)" }}>{role.label}</div>
+                        <div className="text-xs font-bold" style={{ color: active ? role.color : role.locked ? "rgba(253,186,116,0.6)" : "rgba(255,255,255,0.7)" }}>{role.label}</div>
                         <div className="mt-0.5 text-[9px] leading-tight" style={{ color: "rgba(255,255,255,0.30)" }}>{role.description}</div>
                       </div>
                     </button>
@@ -159,31 +164,23 @@ export default function SignUpPage() {
               </div>
 
               {selectedRole === "authority" && (
-                <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                  <Info size={12} color="#10b981" className="mt-0.5 shrink-0" />
-                  <p className="text-[9px] leading-relaxed" style={{ color: "rgba(16,185,129,0.8)" }}>
+                <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(46,106,66,0.10)", border: "1px solid rgba(46,106,66,0.25)" }}>
+                  <Info size={12} color="#2E6A42" className="mt-0.5 shrink-0" />
+                  <p className="text-[9px] leading-relaxed" style={{ color: "rgba(46,106,66,0.9)" }}>
                     Authority accounts require <strong>admin approval</strong> before ward access is activated.
                   </p>
                 </div>
               )}
             </div>
 
-            {/* ── Divider ──────────────────────────────────────────────── */}
+            {/* Divider */}
             <div className="mb-5 flex items-center gap-3">
               <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.08)" }} />
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-white/25">Step 3 — Create account</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "rgba(253,186,116,0.35)" }}>Step 3 — Create account</span>
               <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.08)" }} />
             </div>
 
-            {/* ── Clerk widget ─────────────────────────────────────────── */}
-            {/*
-              KEY is critical: Clerk reads unsafeMetadata only once at
-              mount. If the user picks a role AFTER the widget renders,
-              the old value stays frozen. Changing `key` forces React to
-              unmount + remount the widget so Clerk always picks up the
-              latest selectedRole and trimmedName before the user clicks
-              Continue.
-            */}
+            {/* Clerk widget */}
             <div className="relative" style={{ zIndex: 10 }}>
               <SignUp
                 key={`${selectedRole}__${trimmedName}`}
@@ -194,12 +191,12 @@ export default function SignUpPage() {
                 appearance={{
                   variables: {
                     colorBackground: "transparent",
-                    colorText: "#f1f5f9",
-                    colorTextSecondary: "rgba(241,245,249,0.55)",
+                    colorText: "#f8f6f1",
+                    colorTextSecondary: "rgba(248,246,241,0.55)",
                     colorInputBackground: "rgba(255,255,255,0.06)",
-                    colorInputText: "#f1f5f9",
+                    colorInputText: "#f8f6f1",
                     borderRadius: "12px",
-                    colorPrimary: "#2563eb",
+                    colorPrimary: "#D95D0F",
                   },
                   elements: {
                     rootBox: "w-full",
@@ -208,12 +205,12 @@ export default function SignUpPage() {
                     headerSubtitle: "hidden",
                     header: "hidden",
                     footer: "!bg-transparent",
-                    footerActionLink: "!text-blue-400 hover:!text-blue-300 font-semibold",
+                    footerActionLink: "!text-orange-400 hover:!text-orange-300 font-semibold",
                     footerActionText: "!text-white/40",
                     formButtonPrimary:
                       "!w-full !rounded-xl !py-3 !text-xs !font-bold !tracking-widest !uppercase !transition-all hover:!opacity-90 !shadow-lg",
                     formFieldInput:
-                      "!rounded-xl !border !border-white/10 !bg-white/5 !text-white !placeholder-white/20 focus:!border-blue-400/60 focus:!ring-0 !text-sm !py-2.5 !px-3",
+                      "!rounded-xl !border !border-white/10 !bg-white/5 !text-white !placeholder-white/20 focus:!border-orange-400/60 focus:!ring-0 !text-sm !py-2.5 !px-3",
                     formFieldLabel: "!text-[10px] !font-bold !uppercase !tracking-widest !text-white/50",
                     formFieldInputShowPasswordButton: "!text-white/40 hover:!text-white/70",
                     formFieldInputShowPasswordIcon: "!text-white/40",
@@ -223,7 +220,7 @@ export default function SignUpPage() {
                       "!rounded-xl !border !border-white/10 !bg-white/5 !text-white/70 hover:!bg-white/10 !text-xs !font-medium !transition-all",
                     socialButtonsBlockButtonText: "!text-white/70",
                     otpCodeFieldInput:
-                      "!bg-white/5 !border !border-white/15 !text-white !rounded-xl !text-lg focus:!border-blue-400/60",
+                      "!bg-white/5 !border !border-white/15 !text-white !rounded-xl !text-lg focus:!border-orange-400/60",
                     alertText: "!text-red-300",
                     alert: "!bg-red-500/10 !border !border-red-400/20 !rounded-xl",
                   },
@@ -235,7 +232,7 @@ export default function SignUpPage() {
           </div>
 
           <p className="mt-5 text-center text-xs text-white/30">
-            <Link href="/sign-in" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
+            <Link href="/sign-in" className="font-semibold transition-colors" style={{ color: "#FDBA74" }}>
               <ArrowLeft className="inline h-3 w-3" /> Back to sign in
             </Link>
           </p>
