@@ -139,13 +139,13 @@ export default function SignInPage() {
               <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.08)" }} />
             </div>
 
-            {/* Clerk widget */}
+            {/* Clerk widget
+                preferredSignInStrategy="password" forces Clerk to render
+                the email + password form immediately instead of the default
+                email-link / OTP flow. Without this prop Clerk hides the
+                password field behind "Use password instead". */}
             <div className="relative z-10">
               <SignIn
-                {/* Force email + password form on first render —
-                    without this Clerk defaults to email-link / OTP,
-                    which hides the password field until the user
-                    manually clicks "Use password instead". */}
                 preferredSignInStrategy="password"
                 appearance={{
                   variables: {
@@ -171,6 +171,8 @@ export default function SignInPage() {
                     formFieldInput:
                       "!rounded-xl !border !border-white/10 !bg-white/5 !text-white !placeholder-white/20 focus:!border-blue-400/60 focus:!ring-0 !text-sm !py-2.5 !px-3",
                     formFieldLabel: "!text-[10px] !font-bold !uppercase !tracking-widest !text-white/50",
+                    formFieldInputShowPasswordButton: "!text-white/40 hover:!text-white/70",
+                    formFieldInputShowPasswordIcon: "!text-white/40",
                     dividerLine: "!bg-white/10",
                     dividerText: "!text-white/30 !text-[10px]",
                     socialButtonsBlockButton:
@@ -179,9 +181,6 @@ export default function SignInPage() {
                     identityPreviewText: "!text-white/70",
                     identityPreviewEditButton: "!text-blue-400",
                     formResendCodeLink: "!text-blue-400",
-                    // Show the password field's show/hide toggle button
-                    formFieldInputShowPasswordButton: "!text-white/40 hover:!text-white/70",
-                    formFieldInputShowPasswordIcon: "!text-white/40",
                     otpCodeFieldInput:
                       "!bg-white/5 !border !border-white/15 !text-white !rounded-xl !text-lg focus:!border-blue-400/60",
                     alertText: "!text-red-300",

@@ -1,9 +1,9 @@
 "use client"
 
 import { SignUp } from "@clerk/nextjs"
-import { Crown, Info, Lock, MapPin, Shield, Users, ArrowLeft } from "lucide-react"
-import Image from "next/image"
+import { Crown, Info, Lock, Shield, Users, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useState } from "react"
 
 const ROLES = [
@@ -53,6 +53,9 @@ type SelectableRoleId = "citizen" | "authority"
 export default function SignUpPage() {
   const [selectedRole, setSelectedRole] = useState<SelectableRoleId>("citizen")
   const [fullName, setFullName] = useState("")
+
+  // Trim the name once so the key and the metadata value are always in sync
+  const trimmedName = fullName.trim()
 
   return (
     <main
@@ -104,8 +107,8 @@ export default function SignUpPage() {
                   autoComplete="name"
                   className="w-full rounded-xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-white/25 transition-all focus:outline-none"
                   style={{
-                    border: fullName ? "1px solid rgba(37,99,235,0.55)" : "1px solid rgba(255,255,255,0.10)",
-                    boxShadow: fullName ? "0 0 0 3px rgba(37,99,235,0.12)" : "none",
+                    border: trimmedName ? "1px solid rgba(37,99,235,0.55)" : "1px solid rgba(255,255,255,0.10)",
+                    boxShadow: trimmedName ? "0 0 0 3px rgba(37,99,235,0.12)" : "none",
                   }}
                 />
               </div>
@@ -133,15 +136,11 @@ export default function SignUpPage() {
                         transform: active ? "scale(1.02)" : "scale(1)",
                         cursor: role.locked ? "not-allowed" : "pointer",
                         opacity: role.locked ? 0.45 : 1,
-                        zIndex: 20,
-                        pointerEvents: "auto",
                       }}
                     >
-                      {/* Checkmark for selected */}
                       {active && (
                         <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black text-white" style={{ background: role.color }}>✓</span>
                       )}
-                      {/* Lock icon for admin */}
                       {role.locked && (
                         <span className="absolute right-2 top-2">
                           <Lock size={10} color="rgba(245,158,11,0.6)" />
@@ -177,8 +176,21 @@ export default function SignUpPage() {
             </div>
 
             {/* ── Clerk widget ─────────────────────────────────────────── */}
+            {/*
+              KEY is critical: Clerk reads unsafeMetadata only once at
+              mount. If the user picks a role AFTER the widget renders,
+              the old value stays frozen. Changing `key` forces React to
+              unmount + remount the widget so Clerk always picks up the
+              latest selectedRole and trimmedName before the user clicks
+              Continue.
+            */}
             <div className="relative" style={{ zIndex: 10 }}>
               <SignUp
+                key={`${selectedRole}__${trimmedName}`}
+                unsafeMetadata={{
+                  requestedRole: selectedRole,
+                  displayName: trimmedName || undefined,
+                }}
                 appearance={{
                   variables: {
                     colorBackground: "transparent",
@@ -198,25 +210,26 @@ export default function SignUpPage() {
                     footer: "!bg-transparent",
                     footerActionLink: "!text-blue-400 hover:!text-blue-300 font-semibold",
                     footerActionText: "!text-white/40",
-                    formButtonPrimary: "!w-full !rounded-xl !py-3 !text-xs !font-bold !tracking-widest !uppercase !transition-all hover:!opacity-90 !shadow-lg",
-                    formFieldInput: "!rounded-xl !border !border-white/10 !bg-white/5 !text-white !placeholder-white/20 focus:!border-blue-400/60 focus:!ring-0 !text-sm !py-2.5 !px-3",
+                    formButtonPrimary:
+                      "!w-full !rounded-xl !py-3 !text-xs !font-bold !tracking-widest !uppercase !transition-all hover:!opacity-90 !shadow-lg",
+                    formFieldInput:
+                      "!rounded-xl !border !border-white/10 !bg-white/5 !text-white !placeholder-white/20 focus:!border-blue-400/60 focus:!ring-0 !text-sm !py-2.5 !px-3",
                     formFieldLabel: "!text-[10px] !font-bold !uppercase !tracking-widest !text-white/50",
+                    formFieldInputShowPasswordButton: "!text-white/40 hover:!text-white/70",
+                    formFieldInputShowPasswordIcon: "!text-white/40",
                     dividerLine: "!bg-white/10",
                     dividerText: "!text-white/30 !text-[10px]",
-                    socialButtonsBlockButton: "!rounded-xl !border !border-white/10 !bg-white/5 !text-white/70 hover:!bg-white/10 !text-xs !font-medium !transition-all",
+                    socialButtonsBlockButton:
+                      "!rounded-xl !border !border-white/10 !bg-white/5 !text-white/70 hover:!bg-white/10 !text-xs !font-medium !transition-all",
                     socialButtonsBlockButtonText: "!text-white/70",
-                    otpCodeFieldInput: "!bg-white/5 !border !border-white/15 !text-white !rounded-xl !text-lg focus:!border-blue-400/60",
+                    otpCodeFieldInput:
+                      "!bg-white/5 !border !border-white/15 !text-white !rounded-xl !text-lg focus:!border-blue-400/60",
                     alertText: "!text-red-300",
                     alert: "!bg-red-500/10 !border !border-red-400/20 !rounded-xl",
                   },
                 }}
                 afterSignUpUrl="/"
                 signInUrl="/sign-in"
-                // Pass both the role and the name so the webhook + backend have both
-                unsafeMetadata={{
-                  requestedRole: selectedRole,
-                  displayName: fullName.trim() || undefined,
-                }}
               />
             </div>
           </div>
