@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// ─── Public routes (no auth required) ────────────────────────────────────────
+// Public routes — no auth required
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
@@ -12,25 +12,25 @@ const isPublicRoute = createRouteMatcher([
   "/api/v1/webhooks(.*)",
 ]);
 
-// ─── Role-gated route prefixes ────────────────────────────────────────────────
-const isCitizenRoute    = createRouteMatcher(["/citizen(.*)", "/dashboard(.*)", "/submit(.*)", "/notifications(.*)", "/rti(.*)"]);
-const isAuthorityRoute  = createRouteMatcher(["/authority(.*)", "/analytics(.*)"]);
-const isAdminRoute      = createRouteMatcher(["/admin(.*)", "/admin-dashboard(.*)", "/users(.*)", "/wards(.*)"]);
+// Role-gated prefixes (matching actual file-system routes)
+const isCitizenRoute   = createRouteMatcher(["/citizen(.*)", "/dashboard(.*)", "/notifications(.*)", "/rti(.*)"]);
+const isAuthorityRoute = createRouteMatcher(["/authority(.*)", "/analytics(.*)"]);
+const isAdminRoute     = createRouteMatcher(["/admin(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth();
 
-  // 1. Not signed in → redirect to sign-in (except public routes)
+  // Not signed in → redirect to sign-in (except public routes)
   if (!userId && !isPublicRoute(req)) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
   if (!userId) return NextResponse.next();
 
-  // 2. Signed in — read role from Clerk publicMetadata
+  // Read role from Clerk publicMetadata (set by webhook on user.created)
   const role = (sessionClaims?.metadata as { role?: string } | undefined)?.role ?? "citizen";
 
-  // 3. Guard role-specific routes
+  // Guard role-specific routes
   if (isAdminRoute(req) && role !== "admin") {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
@@ -41,22 +41,28 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
-  // 4. Signed-in user hits / → send to their dashboard
+  // Signed-in user hits / → send to correct dashboard
   if (req.nextUrl.pathname === "/") {
-    if (role === "admin")     return NextResponse.redirect(new URL("/admin-dashboard", req.url));
+    if (role === "admin")     return NextResponse.redirect(new URL("/admin/dashboard",     req.url));
     if (role === "authority") return NextResponse.redirect(new URL("/authority/dashboard", req.url));
-    // citizen (default)
     return NextResponse.redirect(new URL("/citizen/dashboard", req.url));
   }
+
+  // Legacy redirect aliases so old links still work
+  const legacyMap: Record<string, string> = {
+    "/dashboard":           "/citizen/dashboard",
+    "/authority-dashboard": "/authority/dashboard",
+    "/admin-dashboard":     "/admin/dashboard",
+  };
+  const legacy = legacyMap[req.nextUrl.pathname];
+  if (legacy) return NextResponse.redirect(new URL(legacy, req.url));
 
   return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };

@@ -17,14 +17,14 @@ export default function CitizenLayout({ children }: { children: ReactNode }) {
   }, [fetchMe]);
 
   useEffect(() => {
+    // Redirect wrong-role users to their correct dashboard
     if (user?.role === "authority") router.replace("/authority/dashboard");
-    if (user?.role === "admin") router.replace("/admin/dashboard");
+    if (user?.role === "admin")     router.replace("/admin/dashboard");
   }, [router, user?.role]);
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
-      {/* pt-16 matches navbar h-16 (64px) so content starts below navbar */}
       <div className="flex pt-16">
         <Sidebar role="citizen" />
         <main className="min-w-0 flex-1 overflow-y-auto p-6">{children}</main>

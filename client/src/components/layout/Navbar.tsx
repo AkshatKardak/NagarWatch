@@ -3,12 +3,13 @@
 import { Bell, Menu, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useUserStore } from "@/store/userStore";
 import { timeAgo } from "@/lib/utils";
+import { NavbarUserMenu } from "@/components/layout/NavbarUserMenu";
 
 export function Navbar() {
   const { isSignedIn } = useUser();
@@ -27,12 +28,13 @@ export function Navbar() {
     }
   }, [fetchMe, fetchNotifications, isSignedIn]);
 
+  // Use actual file-system routes matching the (role) route groups
   const dashboardHref =
     appUser?.role === "admin"
-      ? "/admin-dashboard"
+      ? "/admin/dashboard"
       : appUser?.role === "authority"
-        ? "/authority-dashboard"
-        : "/dashboard";
+        ? "/authority/dashboard"
+        : "/citizen/dashboard";
 
   const navLinks = [
     { href: "/map", label: "Map" },
@@ -45,7 +47,6 @@ export function Navbar() {
       className="fixed top-0 z-50 w-full border-b bg-white/95 shadow-sm backdrop-blur"
       style={{ borderColor: "#ECE7DE" }}
     >
-      {/* Navbar height is h-16 (64px) — must match pt-16 in layout and top-16 in sidebar */}
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
 
         {/* Logo */}
@@ -98,34 +99,20 @@ export function Navbar() {
                   </span>
                 )}
 
-                {/* Notification dropdown */}
                 {notificationsOpen && (
                   <div
                     className="absolute right-0 mt-2 w-80 rounded-xl border shadow-xl overflow-hidden"
                     style={{ backgroundColor: "#FFFFFF", borderColor: "#ECE7DE" }}
                   >
-                    <div
-                      className="flex items-center justify-between px-4 py-3 border-b"
-                      style={{ borderColor: "#ECE7DE" }}
-                    >
+                    <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "#ECE7DE" }}>
                       <p className="text-sm font-bold" style={{ color: "#1F2937" }}>Notifications</p>
                       <div className="flex items-center gap-2">
                         {unreadCount > 0 && (
-                          <span
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: "#FFF3EB", color: "#D95D0F" }}
-                          >
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#FFF3EB", color: "#D95D0F" }}>
                             {unreadCount} unread
                           </span>
                         )}
-                        <Link
-                          href="/notifications"
-                          className="text-[11px] font-medium hover:underline"
-                          style={{ color: "#D95D0F" }}
-                          onClick={() => setNotificationsOpen(false)}
-                        >
-                          See all
-                        </Link>
+                        <Link href="/notifications" className="text-[11px] font-medium hover:underline" style={{ color: "#D95D0F" }} onClick={() => setNotificationsOpen(false)}>See all</Link>
                       </div>
                     </div>
                     <div className="max-h-72 overflow-y-auto divide-y" style={{ borderColor: "#ECE7DE" }}>
@@ -141,71 +128,34 @@ export function Navbar() {
                       )}
                     </div>
                     <div className="border-t px-4 py-2" style={{ borderColor: "#ECE7DE" }}>
-                      <Link
-                        href="/notifications"
-                        className="block text-center text-xs font-bold py-1 hover:opacity-80"
-                        style={{ color: "#D95D0F" }}
-                        onClick={() => setNotificationsOpen(false)}
-                      >
-                        View all notifications →
-                      </Link>
+                      <Link href="/notifications" className="block text-center text-xs font-bold py-1 hover:opacity-80" style={{ color: "#D95D0F" }} onClick={() => setNotificationsOpen(false)}>View all notifications →</Link>
                     </div>
                   </div>
                 )}
               </div>
 
-              <UserButton afterSignOutUrl="/" />
+              {/* Custom user menu — no API keys */}
+              <NavbarUserMenu />
             </>
           ) : (
             <SignInButton mode="modal">
-              <Button
-                variant="outline"
-                className="text-xs font-bold"
-                style={{ borderColor: "#D95D0F", color: "#D95D0F" }}
-              >
-                Sign In
-              </Button>
+              <Button variant="outline" className="text-xs font-bold" style={{ borderColor: "#D95D0F", color: "#D95D0F" }}>Sign In</Button>
             </SignInButton>
           )}
 
-          {/* Mobile hamburger */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-label="Menu"
-            onClick={() => setMobileOpen((open) => !open)}
-          >
+          <Button type="button" variant="ghost" size="icon" className="md:hidden" aria-label="Menu" onClick={() => setMobileOpen((open) => !open)}>
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
         </div>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
-        <div
-          className="border-t px-4 py-3 md:hidden"
-          style={{ backgroundColor: "#FFFFFF", borderColor: "#ECE7DE" }}
-        >
+        <div className="border-t px-4 py-3 md:hidden" style={{ backgroundColor: "#FFFFFF", borderColor: "#ECE7DE" }}>
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="block py-2.5 text-sm font-medium border-b last:border-0"
-              style={{ color: "#1F2937", borderColor: "#ECE7DE" }}
-              onClick={() => setMobileOpen(false)}
-            >
-              {link.label}
-            </Link>
+            <Link key={link.href} href={link.href} className="block py-2.5 text-sm font-medium border-b last:border-0" style={{ color: "#1F2937", borderColor: "#ECE7DE" }} onClick={() => setMobileOpen(false)}>{link.label}</Link>
           ))}
           {isSignedIn && (
-            <Link
-              href="/notifications"
-              className="block py-2.5 text-sm font-medium"
-              style={{ color: "#D95D0F" }}
-              onClick={() => setMobileOpen(false)}
-            >
+            <Link href="/notifications" className="block py-2.5 text-sm font-medium" style={{ color: "#D95D0F" }} onClick={() => setMobileOpen(false)}>
               Notifications {unreadCount > 0 ? `(${unreadCount})` : ""}
             </Link>
           )}
