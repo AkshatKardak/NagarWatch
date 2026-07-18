@@ -1,7 +1,7 @@
 "use client"
 
 import { SignUp } from "@clerk/nextjs"
-import { Crown, Info, MapPin, Shield, Users, ArrowLeft } from "lucide-react"
+import { Crown, Info, Lock, MapPin, Shield, Users, ArrowLeft } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
@@ -18,6 +18,7 @@ const ROLES = [
     border: "rgba(59,130,246,0.25)",
     activeBorder: "rgba(59,130,246,0.7)",
     glow: "rgba(59,130,246,0.35)",
+    locked: false,
   },
   {
     id: "authority" as const,
@@ -30,13 +31,28 @@ const ROLES = [
     border: "rgba(16,185,129,0.25)",
     activeBorder: "rgba(16,185,129,0.7)",
     glow: "rgba(16,185,129,0.35)",
+    locked: false,
+  },
+  {
+    id: "admin" as const,
+    label: "Admin",
+    icon: Crown,
+    description: "Provisioned by system administrator",
+    color: "#f59e0b",
+    bg: "rgba(245,158,11,0.07)",
+    activeBg: "rgba(245,158,11,0.07)",
+    border: "rgba(245,158,11,0.18)",
+    activeBorder: "rgba(245,158,11,0.18)",
+    glow: "rgba(245,158,11,0.0)",
+    locked: true,
   },
 ]
 
-type RoleId = (typeof ROLES)[number]["id"]
+type SelectableRoleId = "citizen" | "authority"
 
 export default function SignUpPage() {
-  const [selectedRole, setSelectedRole] = useState<RoleId>("citizen")
+  const [selectedRole, setSelectedRole] = useState<SelectableRoleId>("citizen")
+  const [fullName, setFullName] = useState("")
 
   return (
     <main
@@ -50,7 +66,7 @@ export default function SignUpPage() {
       <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-20 blur-3xl" style={{ background: "radial-gradient(circle, #06b6d4, transparent)" }} />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center p-4 py-8">
-        <div className="w-full max-w-[420px]">
+        <div className="w-full max-w-[440px]">
 
           {/* Brand */}
           <div className="mb-6 flex flex-col items-center text-center">
@@ -75,53 +91,76 @@ export default function SignUpPage() {
               boxShadow: "0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
             }}
           >
-            {/* Step 1: Role Selector */}
+            {/* ── Step 1: Full Name ─────────────────────────────────────── */}
             <div className="mb-5">
-              <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">Step 1 — Choose your role</p>
-              <div className="grid grid-cols-2 gap-3">
+              <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">Step 1 — Your name</p>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Full name"
+                  autoComplete="name"
+                  className="w-full rounded-xl border bg-white/5 px-4 py-3 text-sm text-white placeholder-white/25 transition-all focus:outline-none"
+                  style={{
+                    border: fullName ? "1px solid rgba(37,99,235,0.55)" : "1px solid rgba(255,255,255,0.10)",
+                    boxShadow: fullName ? "0 0 0 3px rgba(37,99,235,0.12)" : "none",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* ── Step 2: Role Selector ────────────────────────────────── */}
+            <div className="mb-5">
+              <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">Step 2 — Choose your role</p>
+              <div className="grid grid-cols-3 gap-2">
                 {ROLES.map((role) => {
                   const Icon = role.icon
-                  const active = selectedRole === role.id
+                  const active = !role.locked && selectedRole === role.id
                   return (
                     <button
                       key={role.id}
                       type="button"
-                      onClick={() => setSelectedRole(role.id)}
-                      className="relative flex flex-col items-start gap-2 rounded-2xl p-4 text-left transition-all duration-200 focus:outline-none"
+                      disabled={role.locked}
+                      onClick={() => !role.locked && setSelectedRole(role.id as SelectableRoleId)}
+                      title={role.locked ? "Admin accounts are provisioned by the system administrator" : undefined}
+                      className="relative flex flex-col items-start gap-2 rounded-2xl p-3 text-left transition-all duration-200 focus:outline-none"
                       style={{
                         background: active ? role.activeBg : role.bg,
                         border: `2px solid ${active ? role.activeBorder : role.border}`,
                         boxShadow: active ? `0 0 20px ${role.glow}` : "none",
                         transform: active ? "scale(1.02)" : "scale(1)",
-                        cursor: "pointer",
+                        cursor: role.locked ? "not-allowed" : "pointer",
+                        opacity: role.locked ? 0.45 : 1,
                         zIndex: 20,
                         pointerEvents: "auto",
                       }}
                     >
+                      {/* Checkmark for selected */}
                       {active && (
-                        <span className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black text-white" style={{ background: role.color }}>✓</span>
+                        <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black text-white" style={{ background: role.color }}>✓</span>
                       )}
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: active ? role.color : "rgba(255,255,255,0.08)" }}>
-                        <Icon size={16} color={active ? "white" : "rgba(255,255,255,0.4)"} />
+                      {/* Lock icon for admin */}
+                      {role.locked && (
+                        <span className="absolute right-2 top-2">
+                          <Lock size={10} color="rgba(245,158,11,0.6)" />
+                        </span>
+                      )}
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: active ? role.color : "rgba(255,255,255,0.08)" }}>
+                        <Icon size={14} color={active ? "white" : role.locked ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.4)"} />
                       </div>
                       <div>
-                        <div className="text-sm font-bold" style={{ color: active ? role.color : "rgba(255,255,255,0.7)" }}>{role.label}</div>
-                        <div className="mt-0.5 text-[10px] leading-tight" style={{ color: "rgba(255,255,255,0.35)" }}>{role.description}</div>
+                        <div className="text-xs font-bold" style={{ color: active ? role.color : role.locked ? "rgba(245,158,11,0.6)" : "rgba(255,255,255,0.7)" }}>{role.label}</div>
+                        <div className="mt-0.5 text-[9px] leading-tight" style={{ color: "rgba(255,255,255,0.30)" }}>{role.description}</div>
                       </div>
                     </button>
                   )
                 })}
               </div>
 
-              <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
-                <Crown size={12} color="#f59e0b" className="mt-0.5 shrink-0" />
-                <p className="text-[9px] leading-relaxed" style={{ color: "rgba(245,158,11,0.8)" }}>
-                  <strong>Admin</strong> accounts are provisioned by the system administrator — not available via sign-up.
-                </p>
-              </div>
-
               {selectedRole === "authority" && (
-                <div className="mt-2 flex items-start gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                <div className="mt-3 flex items-start gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
                   <Info size={12} color="#10b981" className="mt-0.5 shrink-0" />
                   <p className="text-[9px] leading-relaxed" style={{ color: "rgba(16,185,129,0.8)" }}>
                     Authority accounts require <strong>admin approval</strong> before ward access is activated.
@@ -130,14 +169,14 @@ export default function SignUpPage() {
               )}
             </div>
 
-            {/* Divider */}
+            {/* ── Divider ──────────────────────────────────────────────── */}
             <div className="mb-5 flex items-center gap-3">
               <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.08)" }} />
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-white/25">Step 2 — Create account</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-white/25">Step 3 — Create account</span>
               <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.08)" }} />
             </div>
 
-            {/* Clerk widget */}
+            {/* ── Clerk widget ─────────────────────────────────────────── */}
             <div className="relative" style={{ zIndex: 10 }}>
               <SignUp
                 appearance={{
@@ -171,10 +210,13 @@ export default function SignUpPage() {
                     alert: "!bg-red-500/10 !border !border-red-400/20 !rounded-xl",
                   },
                 }}
-                // After sign-up, middleware intercepts / and redirects to correct dashboard
                 afterSignUpUrl="/"
                 signInUrl="/sign-in"
-                unsafeMetadata={{ requestedRole: selectedRole }}
+                // Pass both the role and the name so the webhook + backend have both
+                unsafeMetadata={{
+                  requestedRole: selectedRole,
+                  displayName: fullName.trim() || undefined,
+                }}
               />
             </div>
           </div>
