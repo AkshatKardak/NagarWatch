@@ -13,25 +13,41 @@ import { sendWeeklySummaryEmail } from "../services/emailService";
 
 const COMMISSIONER_EMAIL = process.env.COMMISSIONER_EMAIL || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+const GEMINI_CANDIDATE_MODELS = [
+  process.env.GEMINI_MODEL || "gemini-2.0-flash",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash-exp",
+  "gemini-1.5-flash",
+];
 
 async function callGemini(prompt: string): Promise<string> {
   if (!GEMINI_API_KEY) return "[Gemini not configured — add GEMINI_API_KEY to server/.env]";
 
-  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
-  });
+  for (const model of GEMINI_CANDIDATE_MODELS) {
+    if (!model) continue;
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      });
 
-  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
-  const data = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No summary generated.";
+      if (res.ok) {
+        const data = (await res.json()) as {
+          candidates?: { content?: { parts?: { text?: string }[] } }[];
+        };
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      }
+    } catch {
+      // Continue to next model
+    }
+  }
+
+  return "No summary generated.";
 }
 
 async function generateAndSendWeeklySummary(): Promise<void> {

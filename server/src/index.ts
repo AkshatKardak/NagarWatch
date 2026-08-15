@@ -17,6 +17,7 @@ import complaintRoutes from "./routes/complaints";
 import userRoutes from "./routes/users";
 import wardRoutes from "./routes/wards";
 import aiRoutes from "./routes/ai";
+import contractorRoutes from "./routes/contractors";
 import webhookRoutes from "./routes/webhooks";
 import { initWorkers } from "./jobs/slaWorker";
 import { initWeeklyEmailScheduler } from "./jobs/weeklyEmailScheduler";
@@ -52,6 +53,7 @@ app.use("/api/v1/complaints", complaintRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/wards", wardRoutes);
 app.use("/api/v1/ai", aiRoutes);
+app.use("/api/v1/contractors", contractorRoutes);
 
 app.use(errorHandler);
 

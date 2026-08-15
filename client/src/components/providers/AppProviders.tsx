@@ -6,6 +6,8 @@ import { useAuth, useUser } from "@clerk/nextjs"
 import { useAuthToken } from "@/hooks/useAuthToken"
 import { useSocket } from "@/hooks/useSocket"
 import { setAuthToken, usersAPI } from "@/lib/api"
+import { ToasterProvider } from "@/components/providers/ToasterProvider"
+import "@/lib/i18n"
 
 interface AppProvidersProps {
   children: React.ReactNode
@@ -45,5 +47,10 @@ export default function AppProviders({ children }: AppProvidersProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn, user?.id])
 
-  return <>{children}</>
+  return (
+    <ToasterProvider>
+      {children}
+    </ToasterProvider>
+  )
 }
+

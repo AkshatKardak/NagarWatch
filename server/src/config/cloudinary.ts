@@ -62,9 +62,9 @@ export async function uploadImage(buffer: Buffer, folder: string): Promise<strin
   } catch (err: unknown) {
     // Cloudinary SDK throws plain objects; normalise to an Error instance
     // so Express errorHandler receives a proper err.message / err.stack.
-    const raw = err as Record<string, unknown>;
-    const httpCode  = (raw.http_code ?? raw.error?.http_code ?? 500) as number;
-    const rawMsg    = (raw.message ?? (raw.error as Record<string,unknown>)?.message ?? "Upload failed") as string;
+    const raw = err as { http_code?: number; error?: { message?: string; http_code?: number }; message?: string };
+    const httpCode  = (raw?.http_code ?? raw?.error?.http_code ?? 500) as number;
+    const rawMsg    = (raw?.message ?? raw?.error?.message ?? "Upload failed") as string;
     const uploadErr = new Error(
       `Cloudinary upload failed (HTTP ${httpCode}): ${rawMsg}`
     ) as CloudinaryUploadError;

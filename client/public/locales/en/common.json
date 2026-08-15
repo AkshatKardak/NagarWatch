@@ -1,0 +1,66 @@
+{
+  "brand": "NagarWatch",
+  "tagline": "India's Civic Intelligence & Accountability Platform",
+  "submit_complaint": "File a Complaint",
+  "my_complaints": "My Complaints",
+  "notifications": "Notifications",
+  "logout": "Sign Out",
+  "dashboard": "Dashboard",
+  "profile": "Profile",
+  "settings": "Settings",
+  "live_map": "Live Map",
+  "analytics": "Analytics",
+  "contractors": "Contractors",
+  "rti_generator": "RTI Generator",
+  "docs": "Documentation",
+  "sign_in": "Sign In",
+  "sign_up": "Get Started",
+  "complaint_categories": {
+    "pothole": "Pothole",
+    "garbage": "Garbage Dump",
+    "streetlight": "Street Light",
+    "water": "Water Leakage",
+    "water_leak": "Water Leakage",
+    "drainage": "Open / Blocked Drain",
+    "drain_blocked": "Blocked Drain",
+    "road": "Road Damage",
+    "road_damage": "Road Damage",
+    "graffiti": "Graffiti / Vandalism",
+    "noise_pollution": "Noise Pollution",
+    "other": "Other Civic Issue"
+  },
+  "status": {
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "resolved": "Resolved",
+    "rejected": "Rejected"
+  },
+  "priority": {
+    "low": "Low Priority",
+    "medium": "Medium Priority",
+    "high": "High Priority",
+    "critical": "Critical Priority"
+  },
+  "buttons": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view_details": "View Details",
+    "save": "Save",
+    "download_pdf": "Download Official PDF",
+    "copy_text": "Copy Text",
+    "upvote": "Upvote",
+    "back": "Back",
+    "proceed": "Proceed Anyway",
+    "view_existing": "View Existing",
+    "rate_service": "Rate Service"
+  },
+  "footer": {
+    "description": "Empowering citizens to report civic issues, hold municipal authorities accountable, and transform urban governance.",
+    "quick_links": "Quick Links",
+    "legal": "Legal & Open Data",
+    "emergency_helplines": "Emergency Helplines",
+    "rights": "All rights reserved."
+  }
+}

@@ -172,7 +172,7 @@ export default function LiveIssuesMap() {
                 className={`p-3 bg-white border cursor-pointer hover:shadow-sm transition-all ${
                   selectedComplaintId === c._id ? "ring-2" : ""
                 }`}
-                style={selectedComplaintId === c._id ? { ringColor: "#D95D0F", borderColor: "#D95D0F" } : { borderColor: "#ECE7DE" }}
+                style={{ borderColor: selectedComplaintId === c._id ? "#D95D0F" : "#ECE7DE" }}
                 onClick={() => handleSelectComplaint(c)}
               >
                 <div className="flex items-start justify-between gap-2">

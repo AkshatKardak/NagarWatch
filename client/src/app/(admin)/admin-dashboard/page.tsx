@@ -267,7 +267,9 @@ export default function AdminDashboard() {
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }: { name?: string; percent?: number }) =>
+                      `${name || ""} ${((percent ?? 0) * 100).toFixed(0)}%`
+                    }
                     labelLine={false}
                   >
                     {statusData.map((entry, index) => (
@@ -357,11 +359,11 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {sortedWards.map((w) => {
-                  // Real breach percentage computed from actual DB data
+                  const breachCount = w.breachCount || 0
                   const breachPercent = w.count > 0
-                    ? ((w.breachCount / w.count) * 100).toFixed(1)
+                    ? ((breachCount / w.count) * 100).toFixed(1)
                     : "0.0"
-                  const breachNum = w.count > 0 ? (w.breachCount / w.count) * 100 : 0
+                  const breachNum = w.count > 0 ? (breachCount / w.count) * 100 : 0
                   let statusText = "Good"
                   let badgeClass = "bg-green-100 text-green-700"
                   if (breachNum >= 30) { statusText = "Critical"; badgeClass = "bg-red-100 text-red-700" }

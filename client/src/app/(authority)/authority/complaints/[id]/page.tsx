@@ -43,7 +43,9 @@ export default function AuthorityComplaintAction({ params }: PageProps) {
   const router = useRouter()
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser()
 
-  const unwrappedParams = typeof (params as any).then === "function" ? use(params as any) : params as { id: string }
+  const unwrappedParams = (typeof (params as any)?.then === "function"
+    ? use(params as Promise<{ id: string }>)
+    : params) as { id: string }
   const id = unwrappedParams.id
 
   const { selectedComplaint: complaint, loading, error, fetchComplaintById } = useComplaintStore()

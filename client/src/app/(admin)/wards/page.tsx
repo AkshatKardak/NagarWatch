@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
-import { Plus, Pencil, Trash2, Shield, Loader2, AlertCircle, Info } from "lucide-react"
+import { Plus, Pencil, Trash2, Shield, Loader2, AlertCircle, Info, CheckCircle } from "lucide-react"
 
 import { wardsAPI } from "@/lib/api"
 import { Card } from "@/components/ui/card"
@@ -356,11 +356,14 @@ export default function AdminWardManagement() {
           </div>
 
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" className="text-xs uppercase tracking-wider font-semibold">
-                Cancel
-              </Button>
-            </DialogClose>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              className="text-xs uppercase tracking-wider font-semibold"
+            >
+              Cancel
+            </Button>
             <Button
               onClick={handleSaveWard}
               disabled={saving}

@@ -1,0 +1,16 @@
+{
+  "title": "Citizen Dashboard",
+  "welcome": "Welcome back",
+  "subtitle": "Track your filed issues, SLA escalation countdowns, and neighborhood impact.",
+  "total_filed": "Total Filed",
+  "pending_issues": "Pending",
+  "in_progress": "In Progress",
+  "resolved_issues": "Resolved",
+  "sla_active": "SLA Enforced",
+  "recent_complaints": "Your Recent Complaints",
+  "no_complaints": "No complaints filed yet.",
+  "file_first_btn": "File Your First Complaint",
+  "rate_resolution": "Rate Contractor Work",
+  "rti_eligible_banner": "Complaints unresolved for over 30 days are eligible for Instant RTI Escalation.",
+  "generate_rti_btn": "Generate RTI Letter"
+}

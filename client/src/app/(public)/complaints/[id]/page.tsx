@@ -16,7 +16,11 @@ import {
   ImageOff,
   AlertCircle,
   Loader2,
+  Star,
+  HardHat,
 } from "lucide-react"
+import toast from "react-hot-toast"
+import { CitizenFeedbackModal } from "@/components/complaints/CitizenFeedbackModal"
 
 import { useComplaintStore } from "@/store/complaintStore"
 import { complaintsAPI } from "@/lib/api"
@@ -45,7 +49,9 @@ interface PageProps {
 export default function PublicComplaintDetail({ params }: PageProps) {
   const router = useRouter()
   // Support both NextJS 14 sync params and NextJS 15/16 async params
-  const unwrappedParams = typeof (params as any).then === "function" ? use(params as any) : params as { id: string }
+  const unwrappedParams = (typeof (params as any)?.then === "function"
+    ? use(params as Promise<{ id: string }>)
+    : params) as { id: string }
   const id = unwrappedParams.id
 
   const {
@@ -59,6 +65,7 @@ export default function PublicComplaintDetail({ params }: PageProps) {
   const [isUpvoting, setIsUpvoting] = useState(false)
   const [upvoteError, setUpvoteError] = useState<string | null>(null)
   const [localError, setLocalError] = useState<string | null>(null)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -277,9 +284,23 @@ export default function PublicComplaintDetail({ params }: PageProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
-              <p className="text-sm text-gray-700 font-medium">
-                {complaint.location.address}
-              </p>
+              <div className="space-y-1.5">
+                <p className="text-sm text-gray-700 font-medium">
+                  {complaint.location.address}
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {complaint.location.what3words && (
+                    <Badge variant="outline" className="font-mono text-xs border-orange-300 bg-orange-50 text-[#D95D0F]">
+                      What3Words: {complaint.location.what3words}
+                    </Badge>
+                  )}
+                  {complaint.location.landmark && (
+                    <Badge variant="outline" className="text-xs border-blue-200 bg-blue-50 text-blue-700">
+                      Landmark: {complaint.location.landmark}
+                    </Badge>
+                  )}
+                </div>
+              </div>
               <div className="h-[200px] w-full rounded-lg overflow-hidden border border-gray-200">
                 <DynamicMap
                   complaints={complaintsList}
@@ -447,8 +468,68 @@ export default function PublicComplaintDetail({ params }: PageProps) {
               </CardContent>
             </Card>
           )}
+
+          {/* Citizen Feedback Card */}
+          {complaint.status === "resolved" && (
+            <Card className="border border-stone-200 bg-white shadow-sm">
+              <CardHeader className="border-b border-stone-100 py-3 px-6 bg-stone-50/50">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <Star className="size-4 text-amber-500 fill-amber-500" />
+                  Citizen Service Rating
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-3">
+                {complaint.citizenFeedback ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`size-4 ${
+                            s <= complaint.citizenFeedback!.rating
+                              ? "text-amber-500 fill-amber-500"
+                              : "text-stone-200"
+                          }`}
+                        />
+                      ))}
+                      <span className="ml-2 text-xs font-bold text-slate-800">
+                        {complaint.citizenFeedback.rating} / 5 Stars
+                      </span>
+                    </div>
+                    {complaint.citizenFeedback.comment && (
+                      <p className="text-xs text-slate-600 italic bg-stone-50 p-3 rounded-lg border border-stone-100">
+                        "{complaint.citizenFeedback.comment}"
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2 text-center">
+                    <p className="text-xs text-slate-500">
+                      Was this civic issue resolved to your satisfaction?
+                    </p>
+                    <Button
+                      onClick={() => setFeedbackOpen(true)}
+                      className="w-full bg-[#D95D0F] hover:bg-orange-700 text-white text-xs font-bold uppercase tracking-wider py-2"
+                    >
+                      <Star className="size-3.5 mr-1.5 fill-white" />
+                      Rate Contractor Work
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <CitizenFeedbackModal
+        complaintId={complaint._id}
+        complaintTitle={complaint.title}
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        onSuccess={() => fetchComplaintById(id)}
+      />
     </main>
   )
 }

@@ -93,7 +93,7 @@ router.post(
 
       try {
         const clerkClient = createClerkClient({
-          secretKey: process.env.CLERK_SECRET_KEY,
+          secretKey: process.env.CLERK_SECRET_KEY || "",
         });
 
         await clerkClient.users.updateUser(userId, {

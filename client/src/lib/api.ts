@@ -1,5 +1,11 @@
 import axios, { AxiosHeaders, type AxiosResponse } from "axios";
-import type { IAnalytics, IComplaint, IComplaintFilters } from "@/types/complaint";
+import type {
+  IAnalytics,
+  IComplaint,
+  IComplaintFilters,
+  IContractor,
+  ITemporalAnalytics,
+} from "@/types/complaint";
 import type { INotification, IUser, IWard } from "@/types/user";
 
 /**
@@ -12,9 +18,6 @@ let authToken: string | null = null;
  * Optional async callback set by useAuthToken so the interceptor can
  * always request a guaranteed-fresh token directly from Clerk before
  * attaching it to the Authorization header.
- *
- * Without this, a cached (potentially expired) token string could sit in
- * `authToken` for up to 55 minutes and fail mid-session.
  */
 let tokenFetcher: (() => Promise<string | null>) | null = null;
 
@@ -22,7 +25,6 @@ export function setAuthToken(token: string | null): void {
   authToken = token;
 }
 
-/** Called once from useAuthToken so every axios request can get a live token. */
 export function setTokenFetcher(fn: () => Promise<string | null>): void {
   tokenFetcher = fn;
 }
@@ -41,10 +43,12 @@ export interface ListComplaintsResponse {
 }
 
 export interface CreateComplaintResponse {
-  success: true;
-  complaint: IComplaint;
+  success: boolean;
+  duplicate?: boolean;
+  complaint?: IComplaint;
   nearbyCount?: number;
   nearbyComplaints?: IComplaint[];
+  message?: string;
 }
 
 export interface SingleComplaintResponse {
@@ -68,6 +72,15 @@ export interface UpvoteResponse {
 export interface AnalyticsResponse {
   success: true;
   analytics: IAnalytics;
+}
+
+export interface TemporalAnalyticsResponse {
+  success: true;
+  timeframe: string;
+  metrics: ITemporalAnalytics["metrics"];
+  dailyTrend: ITemporalAnalytics["dailyTrend"];
+  categoryBreakdown: ITemporalAnalytics["categoryBreakdown"];
+  statusBreakdown: ITemporalAnalytics["statusBreakdown"];
 }
 
 export interface UserResponse {
@@ -110,6 +123,38 @@ export interface CategorizeResponse {
   confidence: number;
 }
 
+export interface CategorizeImageResponse {
+  success: true;
+  isValidCivicIssue: boolean;
+  detectedCategory: string;
+  severity: string;
+  detectedLandmarks: string[];
+  suggestedTitle: string;
+  suggestedDescription: string;
+  confidence: number;
+}
+
+export interface DuplicateCheckResponse {
+  success: true;
+  isDuplicate: boolean;
+  confidence?: number;
+  matchedComplaint?: IComplaint;
+  nearbyCount?: number;
+  message?: string;
+}
+
+export interface ContractorsResponse {
+  success: true;
+  count: number;
+  contractors: IContractor[];
+}
+
+export interface SingleContractorResponse {
+  success: true;
+  contractor: IContractor;
+  recentResolved?: IComplaint[];
+}
+
 export interface WeeklySummaryResponse {
   success: true;
   summary: string;
@@ -129,16 +174,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-/**
- * Request interceptor — runs before EVERY axios request.
- *
- * If a tokenFetcher is registered (i.e. the user is signed in and
- * useAuthToken has mounted), we call it to get the freshest possible
- * Clerk JWT and set it on both the request header AND the module cache.
- *
- * If tokenFetcher is not available we fall back to the last known
- * cached `authToken` string (covers SSR-like edge cases).
- */
 api.interceptors.request.use(async (config) => {
   let token = authToken;
 
@@ -147,10 +182,10 @@ api.interceptors.request.use(async (config) => {
       const fresh = await tokenFetcher();
       if (fresh) {
         token = fresh;
-        authToken = fresh; // keep cache in sync
+        authToken = fresh;
       }
     } catch {
-      // tokenFetcher failed — fall back to cached token
+      // fallback
     }
   }
 
@@ -184,11 +219,6 @@ export const complaintsAPI = {
     radius?: number
   ): Promise<AxiosResponse<NearbyComplaintsResponse>> =>
     api.get("/complaints/nearby", { params: { lat, lng, radius: radius || 50 } }),
-  // NOTE: Do NOT pass a manual Content-Type header here.
-  // When FormData is given to axios, it automatically sets
-  // 'Content-Type: multipart/form-data; boundary=...' with the correct
-  // boundary string. Overriding it manually strips the boundary and
-  // breaks Multer parsing on the server.
   create: (formData: FormData): Promise<AxiosResponse<CreateComplaintResponse>> =>
     api.post("/complaints", formData),
   updateStatus: (
@@ -196,10 +226,30 @@ export const complaintsAPI = {
     data: { status: string; note?: string }
   ): Promise<AxiosResponse<SingleComplaintResponse>> => api.patch(`/complaints/${id}/status`, data),
   upvote: (id: string): Promise<AxiosResponse<UpvoteResponse>> => api.post(`/complaints/${id}/upvote`),
-  // Same as create — let axios/browser generate the boundary automatically.
   resolve: (id: string, formData: FormData): Promise<AxiosResponse<SingleComplaintResponse>> =>
     api.post(`/complaints/${id}/resolve`, formData),
+  submitFeedback: (
+    id: string,
+    data: { rating: number; comment?: string }
+  ): Promise<AxiosResponse<{ success: true; message: string }>> =>
+    api.post(`/complaints/${id}/feedback`, data),
   getAnalytics: (): Promise<AxiosResponse<AnalyticsResponse>> => api.get("/complaints/analytics/summary"),
+  getTemporalAnalytics: (
+    timeframe = "30d",
+    ward?: string
+  ): Promise<AxiosResponse<TemporalAnalyticsResponse>> =>
+    api.get("/complaints/analytics/temporal", { params: { timeframe, ward } }),
+  exportCSVUrl: (): string =>
+    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1/complaints/export/csv`,
+};
+
+export const contractorsAPI = {
+  getAll: (params?: { department?: string; sort?: string }): Promise<AxiosResponse<ContractorsResponse>> =>
+    api.get("/contractors", { params }),
+  getById: (id: string): Promise<AxiosResponse<SingleContractorResponse>> =>
+    api.get(`/contractors/${id}`),
+  assign: (data: { complaintId: string; contractorId: string }): Promise<AxiosResponse<{ success: true; message: string }>> =>
+    api.post("/contractors/assign", data),
 };
 
 export const usersAPI = {
@@ -233,6 +283,19 @@ export const aiAPI = {
     title: string;
     description: string;
   }): Promise<AxiosResponse<CategorizeResponse>> => api.post("/ai/categorize", data),
+
+  categorizeImage: (data: {
+    imageBase64: string;
+    mimeType?: string;
+  }): Promise<AxiosResponse<CategorizeImageResponse>> => api.post("/ai/categorize-image", data),
+
+  checkDuplicates: (data: {
+    title?: string;
+    description?: string;
+    category?: string;
+    lat?: number;
+    lng?: number;
+  }): Promise<AxiosResponse<DuplicateCheckResponse>> => api.post("/ai/check-duplicates", data),
 
   weeklySummary: (): Promise<AxiosResponse<WeeklySummaryResponse>> => api.post("/ai/weekly-summary"),
 };

@@ -39,8 +39,8 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
         <ClerkProvider
-          afterSignInUrl="/"
-          afterSignUpUrl="/"
+          signInFallbackRedirectUrl="/"
+          signUpFallbackRedirectUrl="/"
           appearance={{
             // Clerk-hosted pages (account portal, email templates) use favicon.png
             layout: {

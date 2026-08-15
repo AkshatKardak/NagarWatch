@@ -67,6 +67,9 @@ export const useComplaintStore = create<ComplaintStore>((set, get) => ({
     try {
       const response = await complaintsAPI.create(formData);
       const complaint = response.data.complaint;
+      if (!complaint) {
+        throw new Error(response.data.message || "Failed to create complaint");
+      }
       set((state) => ({
         complaints: [complaint, ...state.complaints],
         submitting: false,

@@ -9,6 +9,7 @@ import {
 } from "../models/Complaint";
 import { Notification } from "../models/Notification";
 import { User, type IUser } from "../models/User";
+import { Contractor } from "../models/Contractor";
 import { uploadImage } from "../config/cloudinary";
 import { requireAuth, attachUser, requireRole } from "../middleware/auth";
 import { uploadSingle } from "../middleware/upload";
@@ -40,6 +41,8 @@ interface CreateComplaintBody {
   lat?: string;
   lng?: string;
   address?: string;
+  what3words?: string;
+  landmark?: string;
   forceCreate?: string;
 }
 
@@ -319,6 +322,8 @@ router.post(
           // hasCoordinates flag lets geo-queries exclude address-only entries.
           coordinates: hasCoordinates ? [lng, lat] : [0, 0],
           address: body.address,
+          what3words: body.what3words || undefined,
+          landmark: body.landmark || undefined,
           hasCoordinates,
         },
         images: { before: imageUrl },
@@ -764,6 +769,177 @@ router.post(
       res.json({ success: true, complaint });
     } catch (error) {
       next(error);
+    }
+  }
+);
+
+// ─── Citizen Feedback on Resolved Complaint ─────────────────────────────────
+// POST /api/v1/complaints/:id/feedback
+router.post(
+  "/:id/feedback",
+  requireAuth,
+  attachUser,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { rating, comment } = req.body as { rating: number; comment?: string };
+      const numRating = Number(rating);
+      if (!numRating || numRating < 1 || numRating > 5) {
+        res.status(400).json({ success: false, message: "Rating must be an integer between 1 and 5" });
+        return;
+      }
+
+      const complaint = await Complaint.findById(req.params.id);
+      if (!complaint) {
+        res.status(404).json({ success: false, message: "Complaint not found" });
+        return;
+      }
+
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Authentication required" });
+        return;
+      }
+
+      complaint.citizenFeedback = {
+        rating: numRating,
+        comment: comment || "",
+        submittedAt: new Date(),
+        citizenId: req.user._id,
+      };
+
+      await complaint.save();
+
+      // If a contractor was assigned, update contractor rating stats
+      if (complaint.assignedContractor) {
+        const contractor = await Contractor.findById(complaint.assignedContractor);
+        if (contractor) {
+          const newCount = contractor.ratingCount + 1;
+          const newAvg = (contractor.ratingAvg * contractor.ratingCount + numRating) / newCount;
+          contractor.ratingCount = newCount;
+          contractor.ratingAvg = Number(newAvg.toFixed(2));
+          await contractor.save();
+        }
+      }
+
+      res.json({ success: true, message: "Thank you for your feedback!", feedback: complaint.citizenFeedback });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ─── Temporal Analytics (Multi-timeframe 7d/30d/90d/1y) ──────────────────────
+// GET /api/v1/complaints/analytics/temporal
+router.get(
+  "/analytics/temporal",
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { timeframe = "30d", ward } = req.query as { timeframe?: string; ward?: string };
+
+      let days = 30;
+      if (timeframe === "7d") days = 7;
+      else if (timeframe === "90d") days = 90;
+      else if (timeframe === "1y") days = 365;
+
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const matchStage: any = { createdAt: { $gte: startDate } };
+      if (ward && ward !== "all") {
+        matchStage.ward = ward;
+      }
+
+      const [totalCount, resolvedCount, breachedCount, dailyTrend, categoryBreakdown, statusBreakdown] = await Promise.all([
+        Complaint.countDocuments(matchStage),
+        Complaint.countDocuments({ ...matchStage, status: "resolved" }),
+        Complaint.countDocuments({ ...matchStage, "sla.breached": true }),
+        Complaint.aggregate([
+          { $match: matchStage },
+          {
+            $group: {
+              _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+              reported: { $sum: 1 },
+              resolved: {
+                $sum: { $cond: [{ $eq: ["$status", "resolved"] }, 1, 0] },
+              },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ]),
+        Complaint.aggregate([
+          { $match: matchStage },
+          { $group: { _id: "$category", count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ]),
+        Complaint.aggregate([
+          { $match: matchStage },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+      ]);
+
+      const resolutionRate = totalCount > 0 ? Number(((resolvedCount / totalCount) * 100).toFixed(1)) : 0;
+      const breachRate = totalCount > 0 ? Number(((breachedCount / totalCount) * 100).toFixed(1)) : 0;
+
+      res.json({
+        success: true,
+        timeframe,
+        metrics: {
+          totalComplaints: totalCount,
+          resolvedComplaints: resolvedCount,
+          breachedComplaints: breachedCount,
+          resolutionRate,
+          breachRate,
+        },
+        dailyTrend: dailyTrend.map((d) => ({
+          date: d._id,
+          reported: d.reported,
+          resolved: d.resolved,
+        })),
+        categoryBreakdown,
+        statusBreakdown,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ─── Export Complaints to CSV ────────────────────────────────────────────────
+// GET /api/v1/complaints/export/csv
+router.get(
+  "/export/csv",
+  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const complaints = await Complaint.find()
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .populate("ward", "name")
+        .populate("submittedBy", "name email")
+        .lean();
+
+      let csv = "Complaint ID,Title,Category,Status,Priority,Ward,Address,What3Words,Landmark,Submitted Date,SLA Breached,Rating\n";
+
+      for (const c of complaints) {
+        const id = c._id.toString();
+        const title = `"${(c.title || "").replace(/"/g, '""')}"`;
+        const cat = c.category;
+        const st = c.status;
+        const pr = c.priority;
+        const ward = (c.ward as any)?.name || "Unassigned";
+        const addr = `"${(c.location?.address || "").replace(/"/g, '""')}"`;
+        const w3w = (c.location as any)?.what3words || "";
+        const landmark = `"${((c.location as any)?.landmark || "").replace(/"/g, '""')}"`;
+        const date = new Date(c.createdAt).toISOString().split("T")[0];
+        const breached = c.sla?.breached ? "YES" : "NO";
+        const rating = c.citizenFeedback?.rating || "N/A";
+
+        csv += `${id},${title},${cat},${st},${pr},${ward},${addr},${w3w},${landmark},${date},${breached},${rating}\n`;
+      }
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename=nagarwatch_complaints_${Date.now()}.csv`);
+      res.send(csv);
+    } catch (err) {
+      next(err);
     }
   }
 );
