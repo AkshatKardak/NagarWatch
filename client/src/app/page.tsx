@@ -155,17 +155,24 @@ export default function LandingPage() {
               <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-white via-amber-50/40 to-orange-50/60 border border-orange-200/70 shadow-2xl shadow-stone-900/5">
                 {/* Header of preview card */}
                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-stone-200">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-[#D95D0F] flex items-center justify-center text-white font-bold text-xs shadow-sm">
-                      NW
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-auto items-center justify-center">
+                      <Image
+                        src="/Navbar.png"
+                        alt="NagarWatch Hub"
+                        width={280}
+                        height={70}
+                        className="h-10 w-auto object-contain drop-shadow-sm"
+                        priority
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">NagarWatch Ward Hub</p>
+                    <div className="hidden sm:block border-l border-stone-300 pl-3">
+                      <p className="text-xs font-extrabold text-slate-900">Ward Hub</p>
                       <p className="text-[10px] text-slate-500 font-medium">Smart Civic Intelligence</p>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-ping" />
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-100/90 border border-emerald-300/60 px-3 py-1 rounded-full shadow-xs">
+                    <span className="h-2 w-2 rounded-full bg-emerald-600 animate-ping" />
                     System Active
                   </span>
                 </div>

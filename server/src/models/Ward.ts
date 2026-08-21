@@ -36,3 +36,4 @@ const wardSchema = new Schema<IWard>(
 wardSchema.index({ boundary: "2dsphere" });
 
 export const Ward = mongoose.model<IWard>("Ward", wardSchema);
+export default Ward;

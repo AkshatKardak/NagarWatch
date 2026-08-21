@@ -151,4 +151,47 @@ router.patch(
   }
 );
 
+router.get(
+  "/",
+  requireAuth,
+  attachUser,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { role } = req.query;
+      const query: any = { isActive: true };
+      if (role && role !== "all") {
+        query.role = role;
+      }
+      const users = await User.find(query).sort({ createdAt: -1 }).lean();
+      res.json({ success: true, users });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:id/role",
+  requireAuth,
+  attachUser,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { role } = req.body;
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        { role },
+        { new: true }
+      );
+      if (!user) {
+        res.status(404).json({ success: false, message: "User not found" });
+        return;
+      }
+      res.json({ success: true, user });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
+

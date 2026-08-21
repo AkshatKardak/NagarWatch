@@ -2,18 +2,25 @@
 
 import { useState } from "react";
 
+export interface GeoLocationResult {
+  lat: number;
+  lng: number;
+  latitude: number;
+  longitude: number;
+}
+
 export function useGeolocation(): {
-  location: { lat: number; lng: number } | null;
+  location: GeoLocationResult | null;
   loading: boolean;
   error: string | null;
   getLocation: () => void;
 } {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [location, setLocation] = useState<GeoLocationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const getLocation = (): void => {
-    if (!navigator.geolocation) {
+    if (typeof window === "undefined" || !navigator.geolocation) {
       setError("Geolocation not supported by your browser");
       return;
     }
@@ -21,7 +28,9 @@ export function useGeolocation(): {
     setError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setLocation({ lat, lng, latitude: lat, longitude: lng });
         setLoading(false);
       },
       (err) => {
@@ -34,3 +43,5 @@ export function useGeolocation(): {
 
   return { location, loading, error, getLocation };
 }
+
+export default useGeolocation;

@@ -113,4 +113,31 @@ router.delete(
   }
 );
 
+router.get("/:id", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const ward = await Ward.findById(req.params.id)
+      .populate("assignedAuthorities", "name email")
+      .lean();
+    if (!ward) {
+      res.status(404).json({ success: false, message: "Ward not found" });
+      return;
+    }
+    res.json({ success: true, ward });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:id/complaints", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { getComplaintsByWard } = await import("../services/complaintService");
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const wardId = typeof req.params.id === "string" ? req.params.id : "";
+    const complaints = await getComplaintsByWard(wardId, status);
+    res.json({ success: true, complaints });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

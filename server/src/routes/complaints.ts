@@ -246,40 +246,42 @@ router.post(
   uploadSingle,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const body = req.body as CreateComplaintBody;
-      const lat = parseNumber(body.lat);
-      const lng = parseNumber(body.lng);
+      const body = req.body as any;
+      const rawLat = body.latitude !== undefined ? body.latitude : body.lat;
+      const rawLng = body.longitude !== undefined ? body.longitude : body.lng;
+      const lat = parseNumber(rawLat);
+      const lng = parseNumber(rawLng);
       const hasCoordinates = lat !== null && lng !== null;
 
-      // Debug logging to see what the server actually received
+      // Debug logging
       console.log("complaint body", body);
       console.log("complaint file", {
         name: req.file?.originalname,
         type: req.file?.mimetype,
         size: req.file?.size,
       });
-      console.log("req.user", req.user?._id);
 
-      // Required fields: title, description, valid category, address, and image.
-      // lat/lng are OPTIONAL — a citizen may type an address without GPS.
+      // Required fields: title, description, valid category, address
       if (
         !req.user ||
         !body.title?.trim() ||
         !body.description?.trim() ||
         !body.category ||
-        !isCategory(body.category) ||
-        !body.address?.trim() ||
-        !req.file
+        !body.address?.trim()
       ) {
         res.status(400).json({
           success: false,
-          message:
-            "title, description, category, address, and image are required",
+          error: "title, description, category, and address are required",
+          message: "title, description, category, and address are required",
         });
         return;
       }
 
-      // Only run nearby-duplicate check when we have real GPS coords.
+      // Normalize category (case-insensitive)
+      const normalizedCategory = String(body.category).toLowerCase().replace(/ /g, "") as ComplaintCategory;
+      const finalCategory = isCategory(normalizedCategory) ? normalizedCategory : "other";
+
+      // Duplicate check when we have GPS coords
       const forceCreate = body.forceCreate === "true";
       if (hasCoordinates && !forceCreate) {
         const nearby = await findNearbyComplaints(lng, lat, 50);
@@ -294,14 +296,18 @@ router.post(
         }
       }
 
-      const imageUrl = await uploadImage(
-        req.file.buffer,
-        "nagarwatch/complaints"
-      );
+      let imageUrl = "https://placehold.co/600x400?text=Civic+Issue";
+      if (req.file) {
+        imageUrl = await uploadImage(
+          req.file.buffer,
+          "nagarwatch/complaints"
+        );
+      } else if (body.image && typeof body.image === "string" && body.image.startsWith("http")) {
+        imageUrl = body.image;
+      }
 
-      // Ward assignment requires coordinates; skip gracefully when absent.
       const ward = hasCoordinates ? await assignWardToComplaint(lng, lat) : null;
-      const deadline = getSLADeadline(body.category);
+      const deadline = getSLADeadline(finalCategory);
       const { score, priority } = calculatePriorityScore({
         title: body.title,
         description: body.description,
@@ -312,14 +318,12 @@ router.post(
       const complaint = new Complaint({
         title: body.title,
         description: body.description,
-        category: body.category,
+        category: finalCategory,
         status: "pending",
         priority,
         priorityScore: score,
         location: {
           type: "Point",
-          // Use real coords when available; [0,0] placeholder otherwise.
-          // hasCoordinates flag lets geo-queries exclude address-only entries.
           coordinates: hasCoordinates ? [lng, lat] : [0, 0],
           address: body.address,
           what3words: body.what3words || undefined,
@@ -349,21 +353,29 @@ router.post(
 
       if (ward) {
         complaint.ward = ward._id;
-        const assignedAuthority = ward.assignedAuthorities[0];
+        const assignedAuthority = ward.assignedAuthorities?.[0];
         if (assignedAuthority) {
           complaint.assignedTo = assignedAuthority;
         }
       }
 
       await complaint.save();
-      await addSLAJob(complaint._id.toString(), body.category);
-      getIO().to("civic-map").emit("new_complaint", complaint);
+      try {
+        await addSLAJob(complaint._id.toString(), finalCategory);
+      } catch {
+        // BullMQ queue optional if Redis TCP not configured
+      }
 
-      console.log(
-        `New complaint submitted: ${complaint._id} in ward ${
-          ward?.name || "unassigned"
-        }`
-      );
+      try {
+        getIO().to("civic-map").emit("new_complaint", complaint);
+        if (ward) {
+          getIO().to(`ward:${ward._id}`).emit("new_complaint", complaint);
+        }
+      } catch {
+        // Socket may be offline
+      }
+
+      console.log(`New complaint submitted: ${complaint._id}`);
       res.status(201).json({
         success: true,
         complaint,
@@ -575,6 +587,89 @@ router.patch(
         `Complaint ${req.params.id} status updated to ${body.status} by ${req.user.name}`
       );
       res.json({ success: true, complaint });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:id/assign",
+  requireAuth,
+  attachUser,
+  requireRole("authority", "admin"),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { contractorId, assignedTo } = req.body as { contractorId?: string; assignedTo?: string };
+      const complaint = await Complaint.findById(req.params.id);
+
+      if (!complaint) {
+        res.status(404).json({ success: false, message: "Complaint not found" });
+        return;
+      }
+
+      if (contractorId) {
+        complaint.assignedContractor = contractorId as any;
+        const contractor = await Contractor.findById(contractorId);
+        if (contractor) {
+          contractor.totalAssigned += 1;
+          await contractor.save();
+        }
+      }
+
+      if (assignedTo) {
+        complaint.assignedTo = assignedTo as any;
+      }
+
+      await complaint.save();
+      res.json({ success: true, message: "Assigned successfully", complaint });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:id",
+  requireAuth,
+  attachUser,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const updateData = { ...req.body };
+      delete updateData._id;
+      delete updateData.submittedBy;
+
+      const complaint = await Complaint.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      if (!complaint) {
+        res.status(404).json({ success: false, message: "Complaint not found" });
+        return;
+      }
+
+      res.json({ success: true, complaint });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.delete(
+  "/:id",
+  requireAuth,
+  attachUser,
+  requireRole("admin", "authority"),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const complaint = await Complaint.findByIdAndDelete(req.params.id);
+      if (!complaint) {
+        res.status(404).json({ success: false, message: "Complaint not found" });
+        return;
+      }
+      res.json({ success: true, message: "Complaint deleted successfully" });
     } catch (error) {
       next(error);
     }

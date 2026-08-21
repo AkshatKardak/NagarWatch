@@ -1,165 +1,101 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Sparkles, Loader2, X } from "lucide-react"
-import { aiAPI } from "@/lib/api"
-import type { CategorizeResponse } from "@/lib/api"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Sparkles, Loader2, X } from "lucide-react";
+import { aiAPI } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+export interface CategorizeResponse {
+  category: string;
+  priority: string;
+  confidence: number;
+  keywords?: string[];
+  suggestedAction?: string;
+}
 
 interface Props {
-  title: string
-  description: string
-  onApply?: (result: CategorizeResponse) => void
+  title: string;
+  description: string;
+  onApply?: (result: CategorizeResponse) => void;
 }
 
 export function AICategorizeBadge({ title, description, onApply }: Props) {
-  const [result, setResult] = useState<CategorizeResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [dismissed, setDismissed] = useState(false)
+  const [result, setResult] = useState<CategorizeResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState(false);
 
   const handleAnalyze = async () => {
-    if (!title.trim() || !description.trim()) return
-    setLoading(true)
-    setError(null)
-    setDismissed(false)
+    if (!title.trim() || !description.trim()) return;
+    setLoading(true);
+    setError(null);
+    setDismissed(false);
     try {
-      const res = await aiAPI.categorize({ title, description })
-      setResult(res.data)
+      const res = await aiAPI.categorize({ title, description });
+      setResult(res.data);
     } catch {
-      setError("AI categorization failed")
+      setError("AI suggestion unavailable");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  if (dismissed) return null
-
-  const priorityColor: Record<string, string> = {
-    low: "#16A34A",
-    medium: "#F59E0B",
-    high: "#D95D0F",
-    critical: "#DC2626",
-  }
+  if (dismissed) return null;
 
   return (
-    <div
-      className="rounded-lg border p-4 space-y-3"
-      style={{ borderColor: "#ECE7DE", backgroundColor: "#FAFAF8" }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="size-4" style={{ color: "#D95D0F" }} />
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "#4B5563" }}>
-            Gemini AI Suggestion
-          </span>
-        </div>
-        {result && (
-          <button onClick={() => setDismissed(true)} className="opacity-50 hover:opacity-100">
-            <X className="size-3.5" style={{ color: "#4B5563" }} />
-          </button>
-        )}
-      </div>
-
-      {!result && !loading && (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={handleAnalyze}
-          disabled={!title.trim() || !description.trim()}
-          className="text-xs font-bold w-full"
-          style={{ borderColor: "#D95D0F", color: "#D95D0F" }}
+          disabled={loading || !title.trim()}
+          className="text-xs font-bold text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100"
         >
-          <Sparkles className="size-3.5 mr-1.5" />
-          Analyze & Auto-Categorize
-        </Button>
-      )}
-
-      {loading && (
-        <div className="flex items-center gap-2 text-xs" style={{ color: "#4B5563" }}>
-          <Loader2 className="size-3.5 animate-spin" />
-          Analyzing complaint with Gemini AI...
-        </div>
-      )}
-
-      {error && (
-        <p className="text-xs" style={{ color: "#DC2626" }}>{error}</p>
-      )}
-
-      {result && !loading && (
-        <div className="space-y-3">
-          {/* Category + Priority */}
-          <div className="flex flex-wrap gap-2">
-            <Badge
-              className="text-[10px] font-bold uppercase"
-              style={{ backgroundColor: "#FFF3EB", color: "#D95D0F", border: "1px solid #D95D0F" }}
-            >
-              {result.category}
-            </Badge>
-            <Badge
-              className="text-[10px] font-bold uppercase"
-              style={{
-                backgroundColor: `${priorityColor[result.priority]}15`,
-                color: priorityColor[result.priority],
-                border: `1px solid ${priorityColor[result.priority]}`,
-              }}
-            >
-              {result.priority} priority
-            </Badge>
-            <Badge
-              className="text-[10px] font-semibold"
-              style={{ backgroundColor: "#F0FDF4", color: "#16A34A", border: "1px solid #16A34A" }}
-            >
-              {Math.round(result.confidence * 100)}% confident
-            </Badge>
-          </div>
-
-          {/* Keywords */}
-          <div>
-            <p className="text-[10px] font-bold uppercase mb-1" style={{ color: "#9CA3AF" }}>Keywords</p>
-            <div className="flex flex-wrap gap-1">
-              {result.keywords.map((kw) => (
-                <span
-                  key={kw}
-                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                  style={{ backgroundColor: "#F3F4F6", color: "#4B5563" }}
-                >
-                  {kw}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Suggested Action */}
-          <div
-            className="text-xs p-3 rounded-lg border italic"
-            style={{ backgroundColor: "#EFF6FF", borderColor: "#BFDBFE", color: "#1E40AF" }}
-          >
-            <span className="font-bold not-italic">Suggested Action: </span>
-            {result.suggestedAction}
-          </div>
-
-          {/* SLA */}
-          <p className="text-[10px]" style={{ color: "#4B5563" }}>
-            Estimated SLA: <strong>{result.estimatedSLAHours}h</strong>
-          </p>
-
-          {/* Apply button */}
-          {onApply && (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => { onApply(result!); setDismissed(true) }}
-              className="w-full text-xs font-bold text-white"
-              style={{ backgroundColor: "#D95D0F" }}
-            >
-              Apply AI Suggestions
-            </Button>
+          {loading ? (
+            <Loader2 className="size-3 animate-spin mr-1.5" />
+          ) : (
+            <Sparkles className="size-3 mr-1.5" />
           )}
+          Suggest with Gemini AI
+        </Button>
+      </div>
+
+      {result && (
+        <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-2xl flex items-start justify-between gap-3 text-xs">
+          <div className="space-y-1">
+            <p className="font-bold text-purple-950">
+              Suggested: <span className="uppercase text-purple-700">{result.category}</span> ({result.priority} priority)
+            </p>
+            {result.suggestedAction && (
+              <p className="text-[11px] text-purple-800">{result.suggestedAction}</p>
+            )}
+            {onApply && (
+              <Button
+                type="button"
+                size="xs"
+                onClick={() => onApply(result)}
+                className="mt-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-[10px] uppercase"
+              >
+                Apply AI Suggestions
+              </Button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            className="text-purple-400 hover:text-purple-700 p-1"
+          >
+            <X className="size-3.5" />
+          </button>
         </div>
       )}
+
+      {error && <p className="text-[11px] text-red-500">{error}</p>}
     </div>
-  )
+  );
 }
+
+export default AICategorizeBadge;

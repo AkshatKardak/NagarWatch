@@ -69,16 +69,16 @@ export function Navbar() {
         WebkitBackdropFilter: "blur(20px)",
       }}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 md:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center shrink-0">
+        <Link href="/" className="flex items-center shrink-0 py-1 transition-transform hover:scale-[1.02]">
           <Image
             src="/Navbar.png"
             alt="NagarWatch"
-            width={360}
-            height={90}
+            width={480}
+            height={120}
             priority
-            className="h-11 w-auto object-contain"
+            className="h-14 sm:h-16 md:h-16 w-auto object-contain drop-shadow-sm"
           />
         </Link>
 

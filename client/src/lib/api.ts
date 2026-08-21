@@ -1,24 +1,19 @@
-import axios, { AxiosHeaders, type AxiosResponse } from "axios";
-import type {
-  IAnalytics,
-  IComplaint,
-  IComplaintFilters,
-  IContractor,
-  ITemporalAnalytics,
-} from "@/types/complaint";
-import type { INotification, IUser, IWard } from "@/types/user";
+import axios from "axios";
+import type { Complaint, User, Ward, Contractor, Notification } from "./types";
 
-/**
- * Module-level token cache. Updated by setAuthToken() AND by the
- * tokenFetcher callback whenever an actual request is fired.
- */
+declare global {
+  interface Window {
+    Clerk?: {
+      session?: {
+        getToken: () => Promise<string | null>;
+      };
+    };
+  }
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+
 let authToken: string | null = null;
-
-/**
- * Optional async callback set by useAuthToken so the interceptor can
- * always request a guaranteed-fresh token directly from Clerk before
- * attaching it to the Authorization header.
- */
 let tokenFetcher: (() => Promise<string | null>) | null = null;
 
 export function setAuthToken(token: string | null): void {
@@ -34,260 +29,163 @@ export function clearTokenFetcher(): void {
   authToken = null;
 }
 
-export interface ListComplaintsResponse {
-  success: true;
-  complaints: IComplaint[];
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export interface CreateComplaintResponse {
-  success: boolean;
-  duplicate?: boolean;
-  complaint?: IComplaint;
-  nearbyCount?: number;
-  nearbyComplaints?: IComplaint[];
-  message?: string;
-}
-
-export interface SingleComplaintResponse {
-  success: true;
-  complaint: IComplaint;
-}
-
-export interface NearbyComplaintsResponse {
-  success: true;
-  complaints: IComplaint[];
-  count: number;
-}
-
-export interface UpvoteResponse {
-  success: true;
-  upvoteCount: number;
-  priorityScore: number;
-  priority: IComplaint["priority"];
-}
-
-export interface AnalyticsResponse {
-  success: true;
-  analytics: IAnalytics;
-}
-
-export interface TemporalAnalyticsResponse {
-  success: true;
-  timeframe: string;
-  metrics: ITemporalAnalytics["metrics"];
-  dailyTrend: ITemporalAnalytics["dailyTrend"];
-  categoryBreakdown: ITemporalAnalytics["categoryBreakdown"];
-  statusBreakdown: ITemporalAnalytics["statusBreakdown"];
-}
-
-export interface UserResponse {
-  success: true;
-  user: IUser;
-}
-
-export interface MyComplaintsResponse extends ListComplaintsResponse {}
-
-export interface NotificationsResponse {
-  success: true;
-  notifications: INotification[];
-  unreadCount: number;
-}
-
-export interface WardsResponse {
-  success: true;
-  wards: IWard[];
-}
-
-export interface WardResponse {
-  success: true;
-  ward: IWard;
-}
-
-export interface RTIResponse {
-  success: true;
-  letter: string;
-  daysPending: number;
-  complaint: { title: string; id: string };
-}
-
-export interface CategorizeResponse {
-  success: true;
-  category: string;
-  priority: string;
-  keywords: string[];
-  suggestedAction: string;
-  estimatedSLAHours: number;
-  confidence: number;
-}
-
-export interface CategorizeImageResponse {
-  success: true;
-  isValidCivicIssue: boolean;
-  detectedCategory: string;
-  severity: string;
-  detectedLandmarks: string[];
-  suggestedTitle: string;
-  suggestedDescription: string;
-  confidence: number;
-}
-
-export interface DuplicateCheckResponse {
-  success: true;
-  isDuplicate: boolean;
-  confidence?: number;
-  matchedComplaint?: IComplaint;
-  nearbyCount?: number;
-  message?: string;
-}
-
-export interface ContractorsResponse {
-  success: true;
-  count: number;
-  contractors: IContractor[];
-}
-
-export interface SingleContractorResponse {
-  success: true;
-  contractor: IContractor;
-  recentResolved?: IComplaint[];
-}
-
-export interface WeeklySummaryResponse {
-  success: true;
-  summary: string;
-  stats: {
-    newComplaints: number;
-    resolved: number;
-    inProgress: number;
-    pending: number;
-    breached: number;
-    categoryBreakdown: Array<{ _id: string; count: number }>;
-  };
-  period: { from: string; to: string };
-}
-
-const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1`,
+export const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
   withCredentials: true,
 });
 
+// Add Clerk token to every request
 api.interceptors.request.use(async (config) => {
   let token = authToken;
 
-  if (tokenFetcher) {
+  if (!token && typeof window !== "undefined" && window.Clerk?.session?.getToken) {
     try {
-      const fresh = await tokenFetcher();
-      if (fresh) {
-        token = fresh;
-        authToken = fresh;
-      }
+      token = await window.Clerk.session.getToken();
+    } catch {
+      // fallback
+    }
+  }
+
+  if (!token && tokenFetcher) {
+    try {
+      token = await tokenFetcher();
     } catch {
       // fallback
     }
   }
 
   if (token) {
-    const headers = AxiosHeaders.from(config.headers);
-    headers.set("Authorization", `Bearer ${token}`);
-    config.headers = headers;
+    config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
 
+// Handle auth errors
 api.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 401) console.warn("Unauthorized - token may have expired");
-      if (error.response?.status === 403) console.warn("Forbidden - insufficient role");
+  (error) => {
+    if (error.response?.status === 401) {
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/sign-in")) {
+        window.location.href = "/sign-in";
+      }
     }
     return Promise.reject(error);
   }
 );
 
-export const complaintsAPI = {
-  getAll: (params?: IComplaintFilters): Promise<AxiosResponse<ListComplaintsResponse>> =>
-    api.get("/complaints", { params }),
-  getById: (id: string): Promise<AxiosResponse<SingleComplaintResponse>> => api.get(`/complaints/${id}`),
-  getNearby: (
-    lat: number,
-    lng: number,
-    radius?: number
-  ): Promise<AxiosResponse<NearbyComplaintsResponse>> =>
-    api.get("/complaints/nearby", { params: { lat, lng, radius: radius || 50 } }),
-  create: (formData: FormData): Promise<AxiosResponse<CreateComplaintResponse>> =>
-    api.post("/complaints", formData),
-  updateStatus: (
-    id: string,
-    data: { status: string; note?: string }
-  ): Promise<AxiosResponse<SingleComplaintResponse>> => api.patch(`/complaints/${id}/status`, data),
-  upvote: (id: string): Promise<AxiosResponse<UpvoteResponse>> => api.post(`/complaints/${id}/upvote`),
-  resolve: (id: string, formData: FormData): Promise<AxiosResponse<SingleComplaintResponse>> =>
-    api.post(`/complaints/${id}/resolve`, formData),
-  submitFeedback: (
-    id: string,
-    data: { rating: number; comment?: string }
-  ): Promise<AxiosResponse<{ success: true; message: string }>> =>
+// API Methods
+export const complaintsApi = {
+  getAll: (params?: { status?: string; wardId?: string; category?: string; page?: number; limit?: number }) =>
+    api.get<any>("/complaints", { params }),
+
+  getById: (id: string) =>
+    api.get<any>(`/complaints/${id}`),
+
+  create: (data: FormData) =>
+    api.post<any>("/complaints", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  update: (id: string, data: Partial<Complaint>) =>
+    api.patch<any>(`/complaints/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/complaints/${id}`),
+
+  assignContractor: (id: string, contractorId: string) =>
+    api.patch(`/complaints/${id}/assign`, { contractorId }),
+
+  updateStatus: (id: string, status: string, note?: string) =>
+    api.patch(`/complaints/${id}/status`, { status, note }),
+
+  upvote: (id: string) =>
+    api.post(`/complaints/${id}/upvote`),
+
+  resolve: (id: string, data: FormData) =>
+    api.post(`/complaints/${id}/resolve`, data),
+
+  submitFeedback: (id: string, data: { rating: number; comment?: string }) =>
     api.post(`/complaints/${id}/feedback`, data),
-  getAnalytics: (): Promise<AxiosResponse<AnalyticsResponse>> => api.get("/complaints/analytics/summary"),
-  getTemporalAnalytics: (
-    timeframe = "30d",
-    ward?: string
-  ): Promise<AxiosResponse<TemporalAnalyticsResponse>> =>
+
+  getNearby: (lat: number, lng: number, radius?: number) =>
+    api.get("/complaints/nearby", { params: { lat, lng, radius: radius || 50 } }),
+
+  getAnalytics: () =>
+    api.get("/complaints/analytics/summary"),
+
+  getTemporalAnalytics: (timeframe = "30d", ward?: string) =>
     api.get("/complaints/analytics/temporal", { params: { timeframe, ward } }),
-  exportCSVUrl: (): string =>
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/v1/complaints/export/csv`,
+
+  exportCSVUrl: (): string => `${API_URL}/complaints/export/csv`,
 };
 
-export const contractorsAPI = {
-  getAll: (params?: { department?: string; sort?: string }): Promise<AxiosResponse<ContractorsResponse>> =>
-    api.get("/contractors", { params }),
-  getById: (id: string): Promise<AxiosResponse<SingleContractorResponse>> =>
-    api.get(`/contractors/${id}`),
-  assign: (data: { complaintId: string; contractorId: string }): Promise<AxiosResponse<{ success: true; message: string }>> =>
-    api.post("/contractors/assign", data),
-};
+export const usersApi = {
+  getMe: () =>
+    api.get<any>("/users/me"),
 
-export const usersAPI = {
-  sync: (data: { email: string; name: string }): Promise<AxiosResponse<UserResponse>> =>
+  getAll: (role?: string) =>
+    api.get<any>("/users", { params: { role } }),
+
+  updateRole: (id: string, role: string) =>
+    api.patch(`/users/${id}/role`, { role }),
+
+  sync: (data: { email: string; name: string }) =>
     api.post("/users/sync", data),
-  getMe: (): Promise<AxiosResponse<UserResponse>> => api.get("/users/me"),
-  getMyComplaints: (params?: { page?: number; limit?: number }): Promise<AxiosResponse<MyComplaintsResponse>> =>
+
+  getMyComplaints: (params?: { page?: number; limit?: number }) =>
     api.get("/users/me/complaints", { params }),
-  getNotifications: (): Promise<AxiosResponse<NotificationsResponse>> => api.get("/users/me/notifications"),
-  markNotificationRead: (id: string): Promise<AxiosResponse<{ success: true }>> =>
+
+  getNotifications: () =>
+    api.get("/users/me/notifications"),
+
+  markNotificationRead: (id: string) =>
     api.patch(`/users/me/notifications/${id}/read`),
 };
 
-export const wardsAPI = {
-  getAll: (): Promise<AxiosResponse<WardsResponse>> => api.get("/wards"),
-  create: (data: Partial<IWard>): Promise<AxiosResponse<WardResponse>> => api.post("/wards", data),
-  update: (id: string, data: Partial<IWard>): Promise<AxiosResponse<WardResponse>> =>
-    api.put(`/wards/${id}`, data),
-  delete: (id: string): Promise<AxiosResponse<{ success: true; message: string }>> => api.delete(`/wards/${id}`),
+export const wardsApi = {
+  getAll: () =>
+    api.get<any>("/wards"),
+
+  create: (data: Partial<Ward>) =>
+    api.post<any>("/wards", data),
+
+  update: (id: string, data: Partial<Ward>) =>
+    api.put<any>(`/wards/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/wards/${id}`),
+
+  getComplaints: (wardId: string) =>
+    api.get<any>(`/wards/${wardId}/complaints`),
 };
 
-export const aiAPI = {
+export const contractorsApi = {
+  getAll: (params?: { department?: string; sort?: string }) =>
+    api.get<any>("/contractors", { params }),
+
+  getById: (id: string) =>
+    api.get<any>(`/contractors/${id}`),
+
+  assign: (data: { complaintId: string; contractorId: string }) =>
+    api.post("/contractors/assign", data),
+};
+
+export const aiApi = {
   generateRTI: (data: {
     complaintId: string;
     applicantName: string;
     applicantAddress: string;
     applicantPhone?: string;
-  }): Promise<AxiosResponse<RTIResponse>> => api.post("/ai/rti", data),
+  }) => api.post("/ai/rti", data),
 
-  categorize: (data: {
-    title: string;
-    description: string;
-  }): Promise<AxiosResponse<CategorizeResponse>> => api.post("/ai/categorize", data),
+  categorize: (data: { title: string; description: string }) =>
+    api.post("/ai/categorize", data),
 
-  categorizeImage: (data: {
-    imageBase64: string;
-    mimeType?: string;
-  }): Promise<AxiosResponse<CategorizeImageResponse>> => api.post("/ai/categorize-image", data),
+  categorizeImage: (data: { imageBase64: string; mimeType?: string }) =>
+    api.post("/ai/categorize-image", data),
 
   checkDuplicates: (data: {
     title?: string;
@@ -295,9 +193,16 @@ export const aiAPI = {
     category?: string;
     lat?: number;
     lng?: number;
-  }): Promise<AxiosResponse<DuplicateCheckResponse>> => api.post("/ai/check-duplicates", data),
+  }) => api.post("/ai/check-duplicates", data),
 
-  weeklySummary: (): Promise<AxiosResponse<WeeklySummaryResponse>> => api.post("/ai/weekly-summary"),
+  weeklySummary: () => api.post("/ai/weekly-summary"),
 };
+
+// Aliases for camelCase / UPPERCASE compatibility
+export const complaintsAPI = complaintsApi;
+export const usersAPI = usersApi;
+export const wardsAPI = wardsApi;
+export const contractorsAPI = contractorsApi;
+export const aiAPI = aiApi;
 
 export default api;
