@@ -1,13 +1,19 @@
 "use client";
 
 import { SignIn } from "@clerk/nextjs";
-import { Crown, Shield, Users, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { Crown, Shield, Users, HardHat, ArrowRight, ArrowLeft, Check, Sparkles, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { usersApi } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function SignInPage() {
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<string>("citizen");
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const roles = [
     {
@@ -29,6 +35,15 @@ export default function SignInPage() {
       activeBorder: "rgba(16, 185, 129, 0.6)",
     },
     {
+      id: "contractor",
+      icon: HardHat,
+      label: "Contractor",
+      desc: "Field work orders",
+      activeColor: "#3B82F6",
+      activeBg: "rgba(59, 130, 246, 0.15)",
+      activeBorder: "rgba(59, 130, 246, 0.6)",
+    },
+    {
       id: "admin",
       icon: Crown,
       label: "Admin",
@@ -38,6 +53,34 @@ export default function SignInPage() {
       activeBorder: "rgba(245, 158, 11, 0.6)",
     },
   ];
+
+  const handleRoleSelect = (roleId: string) => {
+    setSelectedRole(roleId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nagarwatch_selected_role", roleId);
+    }
+  };
+
+  const handleDemoAdminLogin = async () => {
+    setDemoLoading(true);
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("nagarwatch_selected_role", "admin");
+        localStorage.setItem("nagarwatch_demo_admin", "true");
+      }
+      await usersApi.demoAdmin();
+      toast.success("Logged in as Municipal Commissioner (Admin Demo)");
+      router.push("/admin/dashboard");
+    } catch {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("nagarwatch_selected_role", "admin");
+      }
+      toast.success("Switched to Admin workspace");
+      router.push("/admin/dashboard");
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <main className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-[#0C0A09]">
@@ -66,7 +109,7 @@ export default function SignInPage() {
         </Link>
       </div>
 
-      <div className="relative z-10 w-full max-w-[460px] py-10">
+      <div className="relative z-10 w-full max-w-[480px] py-10">
         {/* Brand Header */}
         <div className="mb-6 flex flex-col items-center text-center">
           <Link href="/" className="group mb-3 inline-block">
@@ -90,6 +133,28 @@ export default function SignInPage() {
           </p>
         </div>
 
+        {/* ⚡ Quick Admin Demo Bypass Box */}
+        <div className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-950/30 p-3.5 backdrop-blur-xl flex items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+              <Sparkles className="size-3.5 text-amber-400" />
+              <span>Admin Demo Fast Bypass</span>
+            </div>
+            <p className="text-[10px] text-amber-300/80">
+              No Clerk config needed: test municipal admin hub directly
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleDemoAdminLogin}
+            disabled={demoLoading}
+            className="h-8 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-extrabold text-[11px] uppercase tracking-wider shrink-0 shadow-md"
+          >
+            {demoLoading ? <Loader2 className="size-3.5 animate-spin" /> : "1-Click Admin"}
+          </Button>
+        </div>
+
         {/* Main Glass Card */}
         <div className="rounded-3xl bg-stone-900/90 backdrop-blur-2xl border border-white/10 p-5 sm:p-7 shadow-2xl shadow-black/80">
           {/* Role selector */}
@@ -98,12 +163,12 @@ export default function SignInPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
                 Signing In As
               </span>
-              <span className="text-[10px] text-stone-500 font-medium">
-                Auto-routed after login
+              <span className="text-[10px] text-orange-400 font-semibold capitalize">
+                Auto-routes to {selectedRole} dashboard
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {roles.map((role) => {
                 const Icon = role.icon;
                 const active = selectedRole === role.id;
@@ -112,8 +177,8 @@ export default function SignInPage() {
                   <button
                     key={role.id}
                     type="button"
-                    onClick={() => setSelectedRole(role.id)}
-                    className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-2.5 text-center transition-all duration-200 focus:outline-none"
+                    onClick={() => handleRoleSelect(role.id)}
+                    className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-2.5 text-center transition-all duration-200 focus:outline-none cursor-pointer"
                     style={{
                       backgroundColor: active ? role.activeBg : "rgba(255, 255, 255, 0.03)",
                       border: active ? `1.5px solid ${role.activeBorder}` : "1px solid rgba(255, 255, 255, 0.07)",
@@ -216,7 +281,7 @@ export default function SignInPage() {
                   socialButtonsVariant: "blockButton",
                 },
               }}
-              fallbackRedirectUrl="/"
+              fallbackRedirectUrl="/dashboard"
               signUpUrl="/sign-up"
             />
           </div>

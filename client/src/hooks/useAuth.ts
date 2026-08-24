@@ -8,7 +8,11 @@ export function useAuth() {
   const appUser = useUserStore((state) => state.user);
   const fetchMe = useUserStore((state) => state.fetchMe);
 
-  const role = ((user?.publicMetadata?.role as string) || appUser?.role || "citizen") as UserRole;
+  const role = ((user?.publicMetadata?.role as string) ||
+    (user?.unsafeMetadata?.requestedRole as string) ||
+    appUser?.role ||
+    (typeof window !== "undefined" ? localStorage.getItem("nagarwatch_selected_role") : null) ||
+    "citizen") as UserRole;
 
   return {
     user,

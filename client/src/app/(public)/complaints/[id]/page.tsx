@@ -18,9 +18,12 @@ import {
   Loader2,
   Star,
   HardHat,
+  Shield,
+  CheckCircle2,
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { CitizenFeedbackModal } from "@/components/complaints/CitizenFeedbackModal"
+import { useAuth } from "@/hooks/useAuth"
 
 import { useComplaintStore } from "@/store/complaintStore"
 import { complaintsAPI } from "@/lib/api"
@@ -85,6 +88,62 @@ export default function PublicComplaintDetail({ params }: PageProps) {
       document.title = `NagarWatch - ${complaint.title}`
     }
   }, [complaint])
+
+  const { role: userRole } = useAuth()
+  const isAuthorityOrAdmin = userRole === "authority" || userRole === "admin" || userRole === "contractor"
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [resolveNote, setResolveNote] = useState("")
+  const [resolveImage, setResolveImage] = useState<File | null>(null)
+  const [isResolving, setIsResolving] = useState(false)
+
+  const handleStatusChange = async (newStatus: string) => {
+    setUpdatingStatus(true)
+    try {
+      await complaintsAPI.updateStatus(id, newStatus, `Status updated by ${userRole} to ${newStatus}`)
+      toast.success(`Status updated to ${newStatus.toUpperCase()}`)
+      await fetchComplaintById(id)
+    } catch {
+      toast.error("Failed to update status")
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
+  const handleContractorAssign = async (contractorId: string) => {
+    if (!contractorId) return
+    try {
+      await complaintsAPI.assignContractor(id, contractorId)
+      toast.success("Contractor assigned successfully")
+      await fetchComplaintById(id)
+    } catch {
+      toast.error("Failed to assign contractor")
+    }
+  }
+
+  const handleResolveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsResolving(true)
+    try {
+      const formData = new FormData()
+      formData.append("resolutionNote", resolveNote || "Resolved on site")
+      if (resolveImage) {
+        formData.append("image", resolveImage)
+      }
+      await complaintsAPI.resolve(id, formData)
+      toast.success("Complaint marked as resolved!")
+      await fetchComplaintById(id)
+    } catch {
+      try {
+        await complaintsAPI.updateStatus(id, "resolved", resolveNote || "Resolved")
+        toast.success("Complaint marked as resolved!")
+        await fetchComplaintById(id)
+      } catch {
+        toast.error("Failed to resolve complaint")
+      }
+    } finally {
+      setIsResolving(false)
+    }
+  }
 
   const handleUpvote = async () => {
     if (isUpvoting) return
@@ -380,6 +439,90 @@ export default function PublicComplaintDetail({ params }: PageProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* Authority / Admin Management Panel */}
+          {isAuthorityOrAdmin && (
+            <Card className="border-2 border-orange-200 bg-orange-50/40 shadow-sm rounded-2xl overflow-hidden">
+              <CardHeader className="py-3 px-5 border-b border-orange-200/80 bg-orange-100/50">
+                <CardTitle className="text-xs font-black uppercase tracking-wider text-[#D95D0F] flex items-center gap-1.5">
+                  <Shield className="size-4 text-[#D95D0F]" />
+                  Authority Action Control
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                {/* Status selector */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">
+                    Change Status
+                  </label>
+                  <select
+                    value={complaint.status}
+                    disabled={updatingStatus}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className="w-full text-xs font-bold rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-slate-900 focus:border-[#D95D0F] focus:outline-none shadow-xs"
+                  >
+                    <option value="pending">Pending Triage</option>
+                    <option value="in_progress">In Progress (Work Assigned)</option>
+                    <option value="resolved">Resolved (Completed)</option>
+                  </select>
+                </div>
+
+                {/* Assign Contractor */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">
+                    Assign Contractor
+                  </label>
+                  <select
+                    defaultValue={
+                      typeof complaint.assignedContractor === "object"
+                        ? complaint.assignedContractor?._id
+                        : complaint.assignedContractor || ""
+                    }
+                    onChange={(e) => handleContractorAssign(e.target.value)}
+                    className="w-full text-xs font-medium rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-slate-900 focus:border-[#D95D0F] focus:outline-none shadow-xs"
+                  >
+                    <option value="">Select Contractor</option>
+                    <option value="65e2b0000000000000000001">Apex Infrastructure Ltd.</option>
+                    <option value="65e2b0000000000000000002">CleanCity Waste Management</option>
+                    <option value="65e2b0000000000000000003">Urja Power &amp; Lighting Solutions</option>
+                    <option value="65e2b0000000000000000004">JalDhara Water Supply Works</option>
+                    <option value="65e2b0000000000000000005">Varun Water Pipelines</option>
+                  </select>
+                </div>
+
+                {/* Resolve Form */}
+                {complaint.status !== "resolved" && (
+                  <form onSubmit={handleResolveSubmit} className="space-y-3 pt-2 border-t border-orange-200/60">
+                    <input
+                      type="text"
+                      value={resolveNote}
+                      onChange={(e) => setResolveNote(e.target.value)}
+                      placeholder="Resolution notes (e.g. Repair finished)"
+                      className="w-full text-xs rounded-xl border border-stone-300 bg-white p-2.5 focus:border-emerald-600 focus:outline-none"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setResolveImage(e.target.files?.[0] || null)}
+                      className="text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-emerald-600 file:text-white"
+                    />
+                    <Button
+                      type="submit"
+                      disabled={isResolving}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider py-2.5 rounded-xl shadow-xs"
+                    >
+                      {isResolving ? (
+                        <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                      ) : (
+                        <CheckCircle2 className="size-3.5 mr-1.5" />
+                      )}
+                      Mark Resolved &amp; Upload Proof
+                    </Button>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* SLA Card */}
           {complaint.status !== "resolved" && (

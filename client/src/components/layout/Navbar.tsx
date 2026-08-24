@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Menu, X, Map, BarChart3, FileText, BookOpen, AlertCircle, HardHat, Scale } from "lucide-react";
+import { Bell, Menu, X, Map, BarChart3, FileText, BookOpen, AlertCircle, HardHat, Scale, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { SignInButton, useUser } from "@clerk/nextjs";
@@ -57,6 +57,7 @@ export function Navbar() {
       ? [
           { href: "/citizen/rti", label: t("rti_generator"), icon: Scale },
           { href: dashboardHref, label: t("dashboard"), icon: null },
+          { href: "/profile", label: "Profile", icon: User },
         ]
       : []),
   ];

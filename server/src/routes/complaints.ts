@@ -630,6 +630,61 @@ router.patch(
 );
 
 router.patch(
+  "/:id/status",
+  requireAuth,
+  attachUser,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { status, note, assignedContractor } = req.body as {
+        status?: string;
+        note?: string;
+        assignedContractor?: string;
+      };
+
+      if (!status || !validStatuses.has(status as ComplaintStatus)) {
+        res.status(400).json({ success: false, message: "Invalid status value" });
+        return;
+      }
+
+      const complaint = await Complaint.findById(req.params.id);
+      if (!complaint) {
+        res.status(404).json({ success: false, message: "Complaint not found" });
+        return;
+      }
+
+      complaint.status = status as ComplaintStatus;
+      if (status === "resolved") {
+        complaint.resolvedAt = new Date();
+      }
+
+      if (assignedContractor) {
+        complaint.assignedContractor = assignedContractor as any;
+      }
+
+      if (note || req.user) {
+        if (!complaint.statusHistory) complaint.statusHistory = [];
+        complaint.statusHistory.push({
+          status: status as ComplaintStatus,
+          updatedBy: (req.user ? req.user._id : undefined) as any,
+          updatedAt: new Date(),
+          note: note || `Status updated to ${status}`,
+        });
+      }
+
+      await complaint.save();
+
+      try {
+        getIO().to("civic-map").emit("complaint:updated", complaint);
+      } catch {}
+
+      res.json({ success: true, message: `Status updated to ${status}`, complaint });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
   "/:id",
   requireAuth,
   attachUser,

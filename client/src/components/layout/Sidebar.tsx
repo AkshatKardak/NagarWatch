@@ -11,6 +11,7 @@ import {
   Scale,
   Users,
   HardHat,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,12 +32,15 @@ const linksByRole: Record<UserRole, SidebarLink[]> = {
     { href: "/citizen/notifications", label: "Notifications", icon: Bell },
     { href: "/citizen/rti", label: "RTI Generator", icon: Scale },
     { href: "/map", label: "Live Ward Map", icon: Map },
+    { href: "/profile", label: "My Profile", icon: User },
   ],
   authority: [
     { href: "/authority/dashboard", label: "Control Center", icon: LayoutDashboard },
     { href: "/authority/complaints", label: "Triage Queue", icon: ClipboardList },
     { href: "/authority/analytics", label: "Performance", icon: BarChart3 },
     { href: "/authority/wards", label: "Jurisdiction", icon: Map },
+    { href: "/citizen/rti", label: "RTI Generator", icon: Scale },
+    { href: "/profile", label: "My Profile", icon: User },
   ],
   admin: [
     { href: "/admin/dashboard", label: "Executive Hub", icon: LayoutDashboard },
@@ -44,10 +48,14 @@ const linksByRole: Record<UserRole, SidebarLink[]> = {
     { href: "/admin/wards", label: "Ward Zones", icon: Map },
     { href: "/admin/contractors", label: "Contractors Audit", icon: HardHat },
     { href: "/authority/analytics", label: "City Analytics", icon: BarChart3 },
+    { href: "/citizen/rti", label: "RTI Generator", icon: Scale },
+    { href: "/profile", label: "My Profile", icon: User },
   ],
   contractor: [
     { href: "/contractor/dashboard", label: "Field Portal", icon: LayoutDashboard },
     { href: "/contractor/tasks", label: "Work Orders", icon: ClipboardList },
+    { href: "/citizen/rti", label: "RTI Generator", icon: Scale },
+    { href: "/profile", label: "My Profile", icon: User },
   ],
 };
 

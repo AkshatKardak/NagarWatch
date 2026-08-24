@@ -1,7 +1,7 @@
 "use client";
 
 import { SignUp } from "@clerk/nextjs";
-import { Crown, Info, Lock, Shield, Users, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Crown, Info, Shield, Users, HardHat, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
@@ -15,36 +15,49 @@ const ROLES = [
     activeColor: "#D95D0F",
     activeBg: "rgba(217, 93, 15, 0.15)",
     activeBorder: "rgba(217, 93, 15, 0.6)",
-    locked: false,
   },
   {
     id: "authority" as const,
     label: "Authority",
     icon: Shield,
-    description: "Manage ward complaints",
+    description: "Ward officer triage",
     activeColor: "#10B981",
     activeBg: "rgba(16, 185, 129, 0.15)",
     activeBorder: "rgba(16, 185, 129, 0.6)",
-    locked: false,
+  },
+  {
+    id: "contractor" as const,
+    label: "Contractor",
+    icon: HardHat,
+    description: "Field work orders",
+    activeColor: "#3B82F6",
+    activeBg: "rgba(59, 130, 246, 0.15)",
+    activeBorder: "rgba(59, 130, 246, 0.6)",
   },
   {
     id: "admin" as const,
     label: "Admin",
     icon: Crown,
-    description: "Provisioned only",
+    description: "City governance",
     activeColor: "#F59E0B",
     activeBg: "rgba(245, 158, 11, 0.15)",
     activeBorder: "rgba(245, 158, 11, 0.6)",
-    locked: true,
   },
 ];
 
-type SelectableRoleId = "citizen" | "authority";
+type SelectableRoleId = "citizen" | "authority" | "contractor" | "admin";
 
 export default function SignUpPage() {
   const [selectedRole, setSelectedRole] = useState<SelectableRoleId>("citizen");
   const [fullName, setFullName] = useState("");
   const trimmedName = fullName.trim();
+
+  const handleRoleSelect = (roleId: SelectableRoleId) => {
+    setSelectedRole(roleId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nagarwatch_selected_role", roleId);
+    }
+  };
 
   return (
     <main className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 overflow-hidden bg-[#0C0A09]">
@@ -73,7 +86,7 @@ export default function SignUpPage() {
         </Link>
       </div>
 
-      <div className="relative z-10 w-full max-w-[460px] py-10">
+      <div className="relative z-10 w-full max-w-[480px] py-10">
         {/* Brand Header */}
         <div className="mb-6 flex flex-col items-center text-center">
           <Link href="/" className="group mb-3 inline-block">
@@ -121,24 +134,20 @@ export default function SignUpPage() {
           {/* Step 2: Role selection */}
           <div className="space-y-2">
             <label className="text-[11px] font-bold uppercase tracking-wider text-stone-300 block">
-              2. Choose Role *
+              2. Select Your Role *
             </label>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {ROLES.map((role) => {
                 const Icon = role.icon;
-                const active = !role.locked && selectedRole === role.id;
+                const active = selectedRole === role.id;
 
                 return (
                   <button
                     key={role.id}
                     type="button"
-                    disabled={role.locked}
-                    onClick={() => !role.locked && setSelectedRole(role.id as SelectableRoleId)}
-                    title={role.locked ? "Admin accounts are provisioned directly" : undefined}
-                    className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-2.5 text-center transition-all duration-200 focus:outline-none ${
-                      role.locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-                    }`}
+                    onClick={() => handleRoleSelect(role.id as SelectableRoleId)}
+                    className="relative flex flex-col items-center justify-center gap-1.5 rounded-2xl p-2.5 text-center transition-all duration-200 focus:outline-none cursor-pointer"
                     style={{
                       backgroundColor: active ? role.activeBg : "rgba(255, 255, 255, 0.03)",
                       border: active ? `1.5px solid ${role.activeBorder}` : "1px solid rgba(255, 255, 255, 0.07)",
@@ -151,12 +160,6 @@ export default function SignUpPage() {
                         style={{ backgroundColor: role.activeColor }}
                       >
                         <Check className="size-2.5 stroke-[3]" />
-                      </span>
-                    )}
-
-                    {role.locked && (
-                      <span className="absolute top-1.5 right-1.5">
-                        <Lock className="size-2.5 text-stone-400" />
                       </span>
                     )}
 
@@ -184,14 +187,12 @@ export default function SignUpPage() {
               })}
             </div>
 
-            {selectedRole === "authority" && (
-              <div className="flex items-start gap-2 rounded-xl p-2.5 bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs">
-                <Info className="size-3.5 shrink-0 mt-0.5" />
-                <p className="text-[11px] leading-tight">
-                  Authority accounts require admin verification before ward moderation is enabled.
-                </p>
-              </div>
-            )}
+            <div className="flex items-start gap-2 rounded-xl p-2.5 bg-orange-950/30 border border-orange-500/20 text-orange-200 text-xs">
+              <Info className="size-3.5 shrink-0 mt-0.5 text-orange-400" />
+              <p className="text-[11px] leading-tight">
+                Signing up as <strong className="capitalize text-white">{selectedRole}</strong>. You can also switch roles anytime in your profile.
+              </p>
+            </div>
           </div>
 
           <div className="relative flex items-center justify-center pt-1">
@@ -258,7 +259,7 @@ export default function SignUpPage() {
                   socialButtonsVariant: "blockButton",
                 },
               }}
-              fallbackRedirectUrl="/"
+              fallbackRedirectUrl="/dashboard"
               signInUrl="/sign-in"
             />
           </div>

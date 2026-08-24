@@ -13,6 +13,7 @@ import {
   MapPin,
   ChevronRight,
   HardHat,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
@@ -133,6 +134,29 @@ export default function AuthorityDashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Universal RTI & Legal Accountability Banner */}
+      <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-purple-100 text-purple-700 shrink-0">
+            <Scale className="size-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-purple-950">RTI Act 2005 Legal Generator</h3>
+            <p className="text-xs text-purple-800/80">
+              Citizens and authorities can auto-draft Section 6(1) Right to Information petitions for overdue complaints.
+            </p>
+          </div>
+        </div>
+        <Link href="/citizen/rti">
+          <Button
+            size="sm"
+            className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl shrink-0"
+          >
+            Open RTI Engine &rarr;
+          </Button>
+        </Link>
+      </div>
 
       {/* Priority Triage Queue */}
       <Card className="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">

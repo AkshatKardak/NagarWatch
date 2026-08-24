@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { HardHat, CheckCircle2, Clock, AlertTriangle, ArrowRight } from "lucide-react";
+import { HardHat, CheckCircle2, Clock, AlertTriangle, ArrowRight, Scale } from "lucide-react";
 import Link from "next/link";
 import { useComplaints } from "@/hooks/useComplaints";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +45,7 @@ export default function ContractorDashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-white border border-stone-200 rounded-2xl p-4">
           <p className="text-[10px] font-bold text-slate-400 uppercase">Assigned Tasks</p>
           <p className="text-2xl font-extrabold text-slate-900 mt-1">{stats.total}</p>
@@ -60,6 +60,16 @@ export default function ContractorDashboardPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase">Completed</p>
           <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.resolved}</p>
         </Card>
+
+        <Link href="/citizen/rti">
+          <Card className="bg-purple-50 border border-purple-200 hover:border-purple-300 transition rounded-2xl p-4 cursor-pointer">
+            <p className="text-[10px] font-bold text-purple-600 uppercase">Legal Tool</p>
+            <p className="text-sm font-bold text-purple-950 mt-1 flex items-center justify-between">
+              RTI Engine &rarr;
+              <Scale className="size-4 text-purple-700" />
+            </p>
+          </Card>
+        </Link>
       </div>
 
       <Card className="border border-stone-200 bg-white rounded-3xl p-6 shadow-sm">

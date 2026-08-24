@@ -30,13 +30,17 @@ export default function AppProviders({ children }: AppProvidersProps) {
 
     const email = user.primaryEmailAddress?.emailAddress ?? ""
     const name = user.fullName ?? ""
+    const role =
+      (user.unsafeMetadata?.requestedRole as string) ||
+      (typeof window !== "undefined" ? localStorage.getItem("nagarwatch_selected_role") : null) ||
+      undefined
 
     async function syncUserData(): Promise<void> {
       try {
         // Guarantee the token is in the cache before ANY api call fires.
         const token = await getToken()
         setAuthToken(token)
-        await usersAPI.sync({ email, name })
+        await usersAPI.sync({ email, name, role })
       } catch (error) {
         console.error("Failed to sync user data:", error)
       }

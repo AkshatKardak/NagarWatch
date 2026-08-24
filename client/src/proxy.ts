@@ -33,18 +33,9 @@ export default clerkMiddleware(async (auth, req) => {
   if (!userId) return NextResponse.next();
 
   const role =
-    (sessionClaims?.metadata as { role?: string } | undefined)?.role || "citizen";
-
-  // Role guards
-  if (isAdminRoute(req) && role !== "admin") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
-  if (isAuthorityRoute(req) && role !== "authority" && role !== "admin") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
-  if (isContractorRoute(req) && role !== "contractor" && role !== "admin") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
+    (sessionClaims?.metadata as { role?: string } | undefined)?.role ||
+    (sessionClaims?.publicMetadata as { role?: string } | undefined)?.role ||
+    "citizen";
 
   // Handle generic /dashboard navigation by routing to role-specific dashboard
   if (req.nextUrl.pathname === "/dashboard") {

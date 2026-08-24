@@ -133,7 +133,13 @@ export const usersApi = {
   updateRole: (id: string, role: string) =>
     api.patch(`/users/${id}/role`, { role }),
 
-  sync: (data: { email: string; name: string }) =>
+  updateMyRole: (role: string) =>
+    api.patch("/users/me/role", { role }),
+
+  demoAdmin: () =>
+    api.post("/users/demo-admin"),
+
+  sync: (data: { email: string; name: string; role?: string }) =>
     api.post("/users/sync", data),
 
   getMyComplaints: (params?: { page?: number; limit?: number }) =>

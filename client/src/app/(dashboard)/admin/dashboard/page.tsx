@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Crown, BarChart3, Users, Map, HardHat, Sparkles, Loader2, ArrowRight } from "lucide-react";
+import { Crown, BarChart3, Users, Map, HardHat, Sparkles, Loader2, ArrowRight, Scale } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,13 +55,13 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* Quick Navigation Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Link href="/admin/users">
           <Card className="bg-white border border-stone-200 hover:border-orange-300 transition p-4 rounded-2xl cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Authorities & Roles</p>
-                <p className="text-sm font-bold text-slate-900 mt-1">User Management &rarr;</p>
+                <p className="text-sm font-bold text-slate-900 mt-1">Users &rarr;</p>
               </div>
               <Users className="size-5 text-blue-600" />
             </div>
@@ -72,8 +72,8 @@ export default function AdminDashboardPage() {
           <Card className="bg-white border border-stone-200 hover:border-orange-300 transition p-4 rounded-2xl cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Ward Infrastructure</p>
-                <p className="text-sm font-bold text-slate-900 mt-1">Ward Manager &rarr;</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase">Ward Zones</p>
+                <p className="text-sm font-bold text-slate-900 mt-1">Wards &rarr;</p>
               </div>
               <Map className="size-5 text-emerald-600" />
             </div>
@@ -97,9 +97,21 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase">Analytics</p>
-                <p className="text-sm font-bold text-slate-900 mt-1">Full Trends &rarr;</p>
+                <p className="text-sm font-bold text-slate-900 mt-1">Trends &rarr;</p>
               </div>
               <BarChart3 className="size-5 text-purple-600" />
+            </div>
+          </Card>
+        </Link>
+
+        <Link href="/citizen/rti">
+          <Card className="bg-purple-50/70 border border-purple-200 hover:border-purple-300 transition p-4 rounded-2xl cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-purple-600 uppercase">Legal Tool</p>
+                <p className="text-sm font-bold text-purple-950 mt-1">RTI Engine &rarr;</p>
+              </div>
+              <Scale className="size-5 text-purple-700" />
             </div>
           </Card>
         </Link>

@@ -10,6 +10,7 @@ const router = Router();
 interface SyncBody {
   email?: string;
   name?: string;
+  role?: string;
 }
 
 function parsePositiveInt(value: unknown, fallback: number): number {
@@ -30,18 +31,64 @@ router.post("/sync", requireAuth, async (req: Request, res: Response, next: Next
       return;
     }
 
-      const user = await User.findOneAndUpdate(
-        { clerkId: req.clerkUserId },
-        {
-          clerkId: req.clerkUserId,
-          email: body.email || `${req.clerkUserId}@nagarwatch.local`,
-          name: body.name || "NagarWatch User",
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
+    const updateObj: any = {
+      clerkId: req.clerkUserId,
+      email: body.email || `${req.clerkUserId}@nagarwatch.local`,
+      name: body.name || "NagarWatch User",
+    };
 
-    console.log(`User synced for Clerk user ${req.clerkUserId}`);
+    if (body.role && ["citizen", "authority", "admin", "contractor"].includes(body.role)) {
+      updateObj.role = body.role;
+    }
+
+    const user = await User.findOneAndUpdate(
+      { clerkId: req.clerkUserId },
+      updateObj,
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    console.log(`User synced for Clerk user ${req.clerkUserId} with role ${user.role}`);
     res.json({ success: true, user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/me/role", requireAuth, attachUser, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { role } = req.body as { role: string };
+    if (!["citizen", "authority", "admin", "contractor"].includes(role)) {
+      res.status(400).json({ success: false, message: "Invalid role specified" });
+      return;
+    }
+
+    const user = await User.findOneAndUpdate(
+      { clerkId: req.clerkUserId },
+      { role },
+      { new: true }
+    );
+
+    res.json({ success: true, message: `Role updated to ${role}`, user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/demo-admin", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const demoClerkId = "user_demo_admin_commissioner";
+    const user = await User.findOneAndUpdate(
+      { clerkId: demoClerkId },
+      {
+        clerkId: demoClerkId,
+        email: "admin@nagarwatch.gov.in",
+        name: "Municipal Commissioner (Demo)",
+        role: "admin",
+        isActive: true,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json({ success: true, message: "Demo Admin profile active", user, demo: true });
   } catch (error) {
     next(error);
   }
