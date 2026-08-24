@@ -221,3 +221,20 @@
     background-color: var(--primary-hover);
   }
 }
+
+/* ── Leaflet Stacking Context Isolation ── */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 1 !important;
+}
+.leaflet-pane {
+  z-index: 1 !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 2 !important;
+}
+.leaflet-control {
+  z-index: 2 !important;
+}
+

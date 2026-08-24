@@ -45,6 +45,7 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 // ⚠️ Webhook route is registered before express.json()
+app.use("/webhooks", webhookRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/v1/webhooks", webhookRoutes);
 
@@ -54,19 +55,24 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Apply Clerk auth
 app.use(clerkAuth);
 
-// Routes (supporting both /api and /api/v1 paths)
+// Routes (supporting direct, /api, and /api/v1 paths)
+app.use("/complaints", complaintRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/v1/complaints", complaintRoutes);
 
+app.use("/users", userRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/v1/users", userRoutes);
 
+app.use("/wards", wardRoutes);
 app.use("/api/wards", wardRoutes);
 app.use("/api/v1/wards", wardRoutes);
 
+app.use("/contractors", contractorRoutes);
 app.use("/api/contractors", contractorRoutes);
 app.use("/api/v1/contractors", contractorRoutes);
 
+app.use("/ai", aiRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/v1/ai", aiRoutes);
 

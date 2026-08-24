@@ -63,7 +63,7 @@ export function Navbar() {
 
   return (
     <nav
-      className="fixed top-0 z-50 w-full transition-all duration-300"
+      className="fixed top-0 z-[1000] w-full transition-all duration-300"
       style={{
         borderBottom: scrolled ? "1px solid #ECE7DE" : "1px solid transparent",
         backgroundColor: scrolled ? "rgba(248,246,241,0.95)" : "rgba(248,246,241,0.85)",

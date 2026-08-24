@@ -11,7 +11,8 @@ declare global {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").trim().replace(/\/+$/, "");
+const API_URL = rawApiUrl.endsWith("/api") || rawApiUrl.endsWith("/api/v1") ? rawApiUrl : `${rawApiUrl}/api`;
 
 let authToken: string | null = null;
 let tokenFetcher: (() => Promise<string | null>) | null = null;

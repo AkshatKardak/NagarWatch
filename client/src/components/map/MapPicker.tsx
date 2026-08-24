@@ -105,13 +105,16 @@ export default function MapPicker({
   }
 
   return (
-    <div className="relative w-full h-[320px] sm:h-[360px] bg-stone-100 rounded-2xl overflow-hidden">
+    <div
+      className="relative z-0 isolate w-full h-[320px] sm:h-[360px] bg-stone-100 rounded-2xl overflow-hidden"
+      style={{ isolation: "isolate" }}
+    >
       <MapContainer
         center={currentPos ?? defaultCenter}
         zoom={currentPos ? 15 : 13}
         minZoom={4}
         maxZoom={19}
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", zIndex: 1 }}
         scrollWheelZoom
       >
         <MapController center={currentPos} />

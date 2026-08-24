@@ -99,15 +99,15 @@ export default function CivicMap({
 
   return (
     <div
-      className={`rounded-xl overflow-hidden border border-slate-200 shadow-sm ${className}`}
-      style={{ height, borderColor: "#ECE7DE" }}
+      className={`relative z-0 isolate rounded-xl overflow-hidden border border-slate-200 shadow-sm ${className}`}
+      style={{ height, borderColor: "#ECE7DE", isolation: "isolate" }}
     >
       <MapContainer
         center={center}
         zoom={zoom}
         minZoom={4}
         maxZoom={18}
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", zIndex: 1 }}
         scrollWheelZoom
       >
         <InvalidateOnMount />
