@@ -43,7 +43,9 @@ export function Navbar() {
       ? "/admin/dashboard"
       : appUser?.role === "authority"
         ? "/authority/dashboard"
-        : "/citizen/dashboard";
+        : appUser?.role === "contractor"
+          ? "/contractor/dashboard"
+          : "/citizen/dashboard";
 
   const navLinks = [
     { href: "/", label: "Home", icon: null },

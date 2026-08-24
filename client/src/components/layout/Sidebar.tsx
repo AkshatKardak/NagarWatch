@@ -1,10 +1,21 @@
 "use client";
 
-import { BarChart3, Bell, ClipboardList, FileText, LayoutDashboard, Map, Plus, Scale, Users } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  ClipboardList,
+  FileText,
+  LayoutDashboard,
+  Map,
+  Plus,
+  Scale,
+  Users,
+  HardHat,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { UserRole } from "@/types/user";
+import type { UserRole } from "@/lib/types";
 
 interface SidebarLink {
   href: string;
@@ -14,47 +25,68 @@ interface SidebarLink {
 
 const linksByRole: Record<UserRole, SidebarLink[]> = {
   citizen: [
-    { href: "/citizen/dashboard", label: "Home", icon: LayoutDashboard },
-    { href: "/citizen/submit",    label: "Submit Issue", icon: Plus },
-    { href: "/citizen/complaints", label: "My Complaints", icon: FileText },
-    { href: "/notifications",     label: "Notifications", icon: Bell },
-    { href: "/map",              label: "City Map", icon: Map },
-    { href: "/rti",              label: "RTI Letter", icon: Scale },
+    { href: "/citizen/dashboard", label: "Overview", icon: LayoutDashboard },
+    { href: "/citizen/submit", label: "Submit Issue", icon: Plus },
+    { href: "/citizen/complaints", label: "My Grievances", icon: FileText },
+    { href: "/citizen/notifications", label: "Notifications", icon: Bell },
+    { href: "/citizen/rti", label: "RTI Generator", icon: Scale },
+    { href: "/map", label: "Live Ward Map", icon: Map },
   ],
   authority: [
-    { href: "/authority/dashboard",  label: "Dashboard",   icon: LayoutDashboard },
-    { href: "/authority/complaints", label: "All Complaints", icon: ClipboardList },
-    { href: "/authority/analytics",  label: "Analytics",   icon: BarChart3 },
+    { href: "/authority/dashboard", label: "Control Center", icon: LayoutDashboard },
+    { href: "/authority/complaints", label: "Triage Queue", icon: ClipboardList },
+    { href: "/authority/analytics", label: "Performance", icon: BarChart3 },
+    { href: "/authority/wards", label: "Jurisdiction", icon: Map },
   ],
   admin: [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/wards",     label: "Wards",     icon: Map },
-    { href: "/admin/users",     label: "Users",     icon: Users },
-    { href: "/admin/dashboard", label: "Analytics", icon: BarChart3 },
+    { href: "/admin/dashboard", label: "Executive Hub", icon: LayoutDashboard },
+    { href: "/admin/users", label: "User Roles", icon: Users },
+    { href: "/admin/wards", label: "Ward Zones", icon: Map },
+    { href: "/admin/contractors", label: "Contractors Audit", icon: HardHat },
+    { href: "/authority/analytics", label: "City Analytics", icon: BarChart3 },
+  ],
+  contractor: [
+    { href: "/contractor/dashboard", label: "Field Portal", icon: LayoutDashboard },
+    { href: "/contractor/tasks", label: "Work Orders", icon: ClipboardList },
   ],
 };
 
 export function Sidebar({ role }: { role: UserRole }) {
   const pathname = usePathname();
+  const currentRole = role && linksByRole[role] ? role : "citizen";
+  const links = linksByRole[currentRole] || linksByRole.citizen;
 
   return (
-    // top-16 = 64px, must match navbar h-16 and layout pt-16
-    <aside className="hidden w-64 shrink-0 border-r bg-white lg:block">
-      <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto space-y-1 p-4">
-        {linksByRole[role].map((link) => {
+    <aside className="hidden w-64 shrink-0 border-r border-stone-200 bg-white lg:block shadow-xs">
+      <div className="sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto space-y-1 p-4">
+        <div className="px-3 py-2 mb-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#D95D0F]">
+            {currentRole} Workspace
+          </p>
+        </div>
+
+        {links.map((link) => {
           const Icon = link.icon;
           const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+
           return (
             <Link
               key={`${link.href}-${link.label}`}
               href={link.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition hover:bg-muted",
-                active && "bg-primary/10 font-medium text-primary"
+                "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all",
+                active
+                  ? "bg-orange-50 text-[#D95D0F] border border-orange-200/80 shadow-xs"
+                  : "text-slate-600 hover:bg-stone-50 hover:text-slate-900"
               )}
             >
-              <Icon className="size-4" />
-              {link.label}
+              <Icon
+                className={cn(
+                  "size-4 shrink-0 transition-transform",
+                  active ? "text-[#D95D0F]" : "text-slate-400 group-hover:text-slate-600"
+                )}
+              />
+              <span className="truncate">{link.label}</span>
             </Link>
           );
         })}
@@ -62,3 +94,5 @@ export function Sidebar({ role }: { role: UserRole }) {
     </aside>
   );
 }
+
+export default Sidebar;

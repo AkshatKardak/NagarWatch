@@ -5,7 +5,7 @@ let connectAttempted = false;
 
 const SOCKET_URL =
   typeof window !== "undefined"
-    ? (process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000")
+    ? (process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001")
     : "";
 
 /**

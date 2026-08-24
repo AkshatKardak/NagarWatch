@@ -20,11 +20,15 @@ export const requireAuth: RequestHandler = async (
     req.userId = auth.userId;
     req.clerkUserId = auth.userId;
 
-    // Fetch user from DB
-    const user = await User.findOne({ clerkId: auth.userId });
+    // Fetch user from DB, auto-create fallback if not yet synced
+    let user = await User.findOne({ clerkId: auth.userId });
     if (!user) {
-      res.status(403).json({ error: "User not found in database", message: "User not found in database" });
-      return;
+      user = await User.create({
+        clerkId: auth.userId,
+        email: `${auth.userId}@nagarwatch.local`,
+        name: "NagarWatch Citizen",
+        role: "citizen",
+      });
     }
     req.user = user as any;
     next();

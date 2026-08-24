@@ -111,6 +111,17 @@ Full-page notification history for citizens with type-coloured badges, filter ta
 
 ---
 
+## Unique Features
+
+- **🌐 What3Words Micro-Pinpointing Integration**: Ultra-precise 3m × 3m geographic grid resolution mapping enabling field municipal workers to locate underground drainage leaks, damaged transformer boxes, and potholes without ambiguous street descriptions.
+- **⚖️ Automated RTI Act 2005 Legal Escalation Engine**: Automatically generates statutory Right to Information notices (under Section 7 & 19 of the Indian RTI Act 2005) for unresolved civic grievances exceeding 30-day thresholds, complete with instant PDF generation and legal notice dispatch.
+- **🤖 Multimodal Gemini AI Civic Vision & Auto-Triage**: Instant visual verification of damaged infrastructure from citizen photos with automatic severity grading, duplicate cluster detection, and estimated SLA computation.
+- **👷 Public Contractor Performance & Transparency Audit**: Real-time contractor performance scorecards displaying on-time resolution percentages, SLA compliance metrics, and mandatory side-by-side Before/After photographic proof.
+- **📡 Dynamic Heatmap & Ward Boundary Spatial Analytics**: Interactive civic heatmap visualizing grievance clusters across municipal zones, helping commissioners allocate maintenance budgets dynamically.
+- **⚡ Real-Time Multi-Room Socket.IO Civic Hub**: Multi-tier real-time synchronisation across Citizen, Authority, Contractor, and Public interactive map rooms with sub-second event broadcasts.
+
+---
+
 ## AI Features (Gemini 1.5 Flash)
 
 All AI features powered by Gemini via `POST /api/v1/ai/*`. Requires `GEMINI_API_KEY` in `server/.env.local`.
