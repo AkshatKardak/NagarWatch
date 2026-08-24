@@ -162,12 +162,8 @@ export default function SubmitComplaintPage() {
               onLocationSelect={handleLocationSelect}
               initialLat={location?.latitude}
               initialLng={location?.longitude}
+              initialAddress={formData.address}
             />
-            {formData.address && (
-              <p className="text-xs text-slate-600 font-medium mt-2 bg-[#FAF8F5] p-2.5 rounded-xl border border-stone-200">
-                📍 <strong className="text-slate-800">Selected:</strong> {formData.address}
-              </p>
-            )}
           </div>
 
           {/* Image Upload */}
