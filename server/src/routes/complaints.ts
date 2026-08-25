@@ -32,7 +32,7 @@ const validCategories = new Set<ComplaintCategory>([
   "other",
 ]);
 
-const validStatuses = new Set<ComplaintStatus>(["pending", "in_progress", "resolved"]);
+const validStatuses = new Set<string>(["pending", "in_progress", "resolved", "rejected"]);
 
 interface CreateComplaintBody {
   title?: string;
@@ -635,14 +635,11 @@ router.patch(
   attachUser,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { status, note, assignedContractor } = req.body as {
-        status?: string;
-        note?: string;
-        assignedContractor?: string;
-      };
+      const rawStatus = String(req.body.status || "").toLowerCase().trim().replace(/-/g, "_");
+      const normalizedStatus = rawStatus === "inprogress" ? "in_progress" : rawStatus;
 
-      if (!status || !validStatuses.has(status as ComplaintStatus)) {
-        res.status(400).json({ success: false, message: "Invalid status value" });
+      if (!normalizedStatus || !validStatuses.has(normalizedStatus)) {
+        res.status(400).json({ success: false, message: `Invalid status value: "${req.body.status}"` });
         return;
       }
 
@@ -652,24 +649,23 @@ router.patch(
         return;
       }
 
-      complaint.status = status as ComplaintStatus;
-      if (status === "resolved") {
+      complaint.status = normalizedStatus as ComplaintStatus;
+      if (normalizedStatus === "resolved") {
         complaint.resolvedAt = new Date();
       }
 
-      if (assignedContractor) {
-        complaint.assignedContractor = assignedContractor as any;
+      if (req.body.assignedContractor) {
+        complaint.assignedContractor = req.body.assignedContractor as any;
       }
 
-      if (note || req.user) {
-        if (!complaint.statusHistory) complaint.statusHistory = [];
-        complaint.statusHistory.push({
-          status: status as ComplaintStatus,
-          updatedBy: (req.user ? req.user._id : undefined) as any,
-          updatedAt: new Date(),
-          note: note || `Status updated to ${status}`,
-        });
-      }
+      const note = req.body.note || `Status updated to ${normalizedStatus}`;
+      if (!complaint.statusHistory) complaint.statusHistory = [];
+      complaint.statusHistory.push({
+        status: normalizedStatus as ComplaintStatus,
+        updatedBy: (req.user ? req.user._id : undefined) as any,
+        updatedAt: new Date(),
+        note,
+      });
 
       await complaint.save();
 
@@ -677,7 +673,7 @@ router.patch(
         getIO().to("civic-map").emit("complaint:updated", complaint);
       } catch {}
 
-      res.json({ success: true, message: `Status updated to ${status}`, complaint });
+      res.json({ success: true, message: `Status updated to ${normalizedStatus}`, complaint });
     } catch (error) {
       next(error);
     }
@@ -826,55 +822,45 @@ router.post(
   "/:id/resolve",
   requireAuth,
   attachUser,
-  requireRole("authority"),
   uploadSingle,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      if (!req.user) {
-        res
-          .status(401)
-          .json({ success: false, message: "Unauthorized" });
-        return;
-      }
-
-      if (!req.file) {
-        res.status(400).json({
-          success: false,
-          message: "After image is required to resolve a complaint",
-        });
-        return;
-      }
-
       const complaint = await Complaint.findById(req.params.id);
 
       if (!complaint) {
-        res
-          .status(404)
-          .json({ success: false, message: "Complaint not found" });
+        res.status(404).json({ success: false, message: "Complaint not found" });
         return;
       }
 
-      if (complaint.status === "resolved") {
-        res.status(400).json({
-          success: false,
-          message: "Complaint is already resolved",
-        });
-        return;
+      if (req.file) {
+        try {
+          const afterImageUrl = await uploadImage(
+            req.file.buffer,
+            "nagarwatch/resolutions"
+          );
+          if (!complaint.images) complaint.images = {} as any;
+          complaint.images.after = afterImageUrl;
+        } catch (uploadErr) {
+          console.error("Cloudinary upload error in resolve:", uploadErr);
+        }
       }
 
-      const afterImageUrl = await uploadImage(
-        req.file.buffer,
-        "nagarwatch/resolutions"
-      );
-      complaint.images.after = afterImageUrl;
+      const note = (
+        (req.body as ResolveBody).resolutionNote ||
+        req.body.note ||
+        "Complaint resolved and verified on site"
+      ).trim();
+
+      complaint.resolutionNote = note;
       complaint.status = "resolved";
       complaint.resolvedAt = new Date();
-      complaint.resolutionNote = (req.body as ResolveBody).resolutionNote || "";
+
+      if (!complaint.statusHistory) complaint.statusHistory = [];
       complaint.statusHistory.push({
         status: "resolved",
-        updatedBy: req.user._id,
+        updatedBy: (req.user ? req.user._id : undefined) as any,
         updatedAt: new Date(),
-        note: complaint.resolutionNote,
+        note,
       });
 
       await complaint.save();
@@ -884,39 +870,23 @@ router.post(
       ).lean<IUser | null>();
 
       if (submitter && complaint.resolvedAt) {
-        await sendResolutionEmail(submitter.email, {
-          id: complaint._id.toString(),
-          title: complaint.title,
-          resolvedAt: complaint.resolvedAt,
-        });
-      }
-
-      getIO()
-        .to("civic-map")
-        .emit("status_updated", {
-          complaintId: req.params.id,
-          status: "resolved",
-        });
-
-      if (submitter) {
-        getIO()
-          .to(`user_${submitter.clerkId}`)
-          .emit("status_updated", {
-            complaintId: req.params.id,
-            status: "resolved",
-            message: "Your complaint has been resolved!",
+        try {
+          await sendResolutionEmail(submitter.email, {
+            id: complaint._id.toString(),
+            title: complaint.title,
+            resolvedAt: complaint.resolvedAt,
           });
-
-        await Notification.create({
-          userId: submitter.clerkId,
-          type: "resolution",
-          message: `Your complaint "${complaint.title}" has been resolved!`,
-          complaintId: complaint._id,
-        });
+        } catch (emailErr) {
+          console.error("Failed to send resolution email:", emailErr);
+        }
       }
 
-      console.log(`Complaint ${req.params.id} resolved by ${req.user.name}`);
-      res.json({ success: true, complaint });
+      try {
+        getIO().to("civic-map").emit("complaint:resolved", { complaintId: complaint._id });
+        getIO().to("civic-map").emit("complaint:updated", complaint);
+      } catch {}
+
+      res.json({ success: true, message: "Complaint resolved successfully", complaint });
     } catch (error) {
       next(error);
     }
