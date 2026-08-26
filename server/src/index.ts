@@ -19,6 +19,7 @@ import userRoutes from "./routes/users";
 import wardRoutes from "./routes/wards";
 import contractorRoutes from "./routes/contractors";
 import aiRoutes from "./routes/ai";
+import analyticsRoutes from "./routes/analytics";
 import webhookRoutes from "./routes/webhooks";
 import { initWorkers } from "./jobs/slaWorker";
 import { initWeeklyEmailScheduler } from "./jobs/weeklyEmailScheduler";
@@ -29,6 +30,7 @@ import "./models/User";
 import "./models/Complaint";
 import "./models/Ward";
 import "./models/Contractor";
+import "./models/BlacklistedContractor";
 import "./models/Notification";
 
 const app = express();
@@ -76,6 +78,16 @@ app.use("/ai", aiRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/v1/ai", aiRoutes);
 
+// Direct translation & transcription aliases
+app.use("/translation", aiRoutes);
+app.use("/api/translation", aiRoutes);
+app.use("/transcription", aiRoutes);
+app.use("/api/transcription", aiRoutes);
+
+app.use("/analytics", analyticsRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -97,6 +109,15 @@ async function bootstrap(): Promise<void> {
   initWorkers();
   initWeeklyEmailScheduler();
   startSLAChecker();
+
+  // Seed CPWD Government Contractors & Debarred Registry
+  void import("./seeds/cpwdContractors.seed")
+    .then((m) => m.seedCPWDContractors())
+    .catch((err) => console.warn("CPWD contractor seeding skipped:", err?.message || err));
+
+  void import("./seeds/cpwdDebarredContractors.seed")
+    .then((m) => m.seedCPWDDebarredContractors())
+    .catch((err) => console.warn("CPWD debarred seeding skipped:", err?.message || err));
 
   server.listen(PORT, () => {
     console.log(`NagarWatch server running on port ${PORT}`);

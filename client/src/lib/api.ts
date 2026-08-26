@@ -108,6 +108,17 @@ export const complaintsApi = {
   resolve: (id: string, data: FormData) =>
     api.post(`/complaints/${id}/resolve`, data),
 
+  submitResolution: (id: string, data: FormData) =>
+    api.post(`/complaints/${id}/resolution`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  verifyResolution: (id: string) =>
+    api.post(`/complaints/${id}/verify`),
+
+  reopen: (id: string, data: { reason: string; comment?: string }) =>
+    api.post(`/complaints/${id}/reopen`, data),
+
   submitFeedback: (id: string, data: { rating: number; comment?: string }) =>
     api.post(`/complaints/${id}/feedback`, data),
 
@@ -121,6 +132,26 @@ export const complaintsApi = {
     api.get("/complaints/analytics/temporal", { params: { timeframe, ward } }),
 
   exportCSVUrl: (): string => `${API_URL}/complaints/export/csv`,
+};
+
+export const analyticsApi = {
+  getHeatmap: (params?: {
+    ward?: string;
+    category?: string;
+    status?: string;
+    priority?: string;
+    from?: string;
+    to?: string;
+  }) => api.get<any>("/analytics/heatmap", { params }),
+
+  getWardHealth: () =>
+    api.get<any>("/analytics/wards/health"),
+
+  getSingleWardHealth: (wardId: string) =>
+    api.get<any>(`/analytics/wards/health/${wardId}`),
+
+  getContractorPerformance: (params?: { sort?: string; department?: string }) =>
+    api.get<any>("/analytics/contractors", { params }),
 };
 
 export const usersApi = {
@@ -170,17 +201,52 @@ export const wardsApi = {
 };
 
 export const contractorsApi = {
-  getAll: (params?: { department?: string; sort?: string }) =>
+  getAll: (params?: { department?: string; sort?: string; verified?: string }) =>
     api.get<any>("/contractors", { params }),
 
   getById: (id: string) =>
     api.get<any>(`/contractors/${id}`),
+
+  verifyCPWD: (name: string, state?: string) =>
+    api.get<any>("/contractors/verify-cpwd", { params: { name, state } }),
+
+  getCPWDList: (params?: { state?: string; classGrade?: string; category?: string }) =>
+    api.get<any>("/contractors/cpwd-list", { params }),
+
+  checkBlacklist: (name: string) =>
+    api.post<any>("/contractors/check-blacklist", { name }),
+
+  register: (data: any) =>
+    api.post<any>("/contractors/register", data),
+
+  verify: (id: string, data: { isVerified: boolean; verificationSource?: string; documents?: string[] }) =>
+    api.post<any>(`/contractors/${id}/verify`, data),
+
+  getPerformance: (id: string) =>
+    api.get<any>(`/contractors/${id}/performance`),
+
+  getBlacklist: () =>
+    api.get<any>("/contractors/blacklist/all"),
+
+  addToBlacklist: (data: { contractorName: string; reason: string; source?: string }) =>
+    api.post<any>("/contractors/blacklist", data),
 
   assign: (data: { complaintId: string; contractorId: string }) =>
     api.post("/contractors/assign", data),
 };
 
 export const aiApi = {
+  complaintAssist: (data: { title: string; description: string }) =>
+    api.post<any>("/ai/complaint-assist", data),
+
+  translate: (data: { text: string; sourceLanguage?: string; targetLanguage?: string }) =>
+    api.post<any>("/translation", data),
+
+  transcribe: (formData: FormData) =>
+    api.post<any>("/transcription", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
   generateRTI: (data: {
     complaintId: string;
     applicantName: string;
@@ -207,6 +273,7 @@ export const aiApi = {
 
 // Aliases for camelCase / UPPERCASE compatibility
 export const complaintsAPI = complaintsApi;
+export const analyticsAPI = analyticsApi;
 export const usersAPI = usersApi;
 export const wardsAPI = wardsApi;
 export const contractorsAPI = contractorsApi;

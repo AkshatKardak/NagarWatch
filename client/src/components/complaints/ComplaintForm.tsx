@@ -13,8 +13,12 @@ import {
   CheckCircle2,
   Layers,
   ArrowRight,
+  Mic,
+  MicOff,
+  Volume2,
+  Languages,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -64,7 +68,7 @@ interface FormState {
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&countrycodes=in`
     );
     const data = (await response.json()) as { display_name?: string };
     return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -76,6 +80,8 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint) => void }) {
   const { t } = useTranslation(["complaints", "common"]);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [selectedLanguage, setSelectedLanguage] = useState<"en" | "hi" | "mr">("en");
+
   const [form, setForm] = useState<FormState>({
     title: "",
     description: "",
@@ -94,8 +100,17 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
   const [w3wResolving, setW3wResolving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [aiInsight, setAiInsight] = useState<any | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<any | null>(null);
+
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerIntervalRef = useRef<any>(null);
 
   const [nearbyComplaints, setNearbyComplaints] = useState<IComplaint[]>([]);
   const [showNearbyModal, setShowNearbyModal] = useState(false);
@@ -125,43 +140,178 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
     void fillGpsData();
   }, [location]);
 
+  // Trigger Gemini AI Assistant recommendations when title / description has meaningful text
+  const fetchAiAssist = async () => {
+    if (!form.title.trim() && !form.description.trim()) return;
+    setAiAnalyzing(true);
+    try {
+      const res = await aiAPI.complaintAssist({
+        title: form.title,
+        description: form.description,
+      });
+      if (res.data?.success) {
+        setAiInsight(res.data);
+      }
+    } catch {
+      // Graceful fallback
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
+
+  // Voice Recording handler via Web MediaRecorder & Sarvam STT
+  const startRecording = async () => {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+        stream.getTracks().forEach((track) => track.stop());
+        await processAudioForTranscription(audioBlob);
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err: any) {
+      console.warn("Microphone access error:", err);
+      toast.error("Microphone access denied or unavailable. Please type manually.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    }
+  };
+
+  const processAudioForTranscription = async (blob: Blob) => {
+    setIsTranscribing(true);
+    const toastId = toast.loading("Transcribing voice input via Sarvam AI...");
+    try {
+      const audioFormData = new FormData();
+      audioFormData.append("file", blob, "recording.wav");
+      audioFormData.append("language", selectedLanguage);
+
+      const res = await aiAPI.transcribe(audioFormData);
+      toast.dismiss(toastId);
+
+      if (res.data?.transcript) {
+        const text = res.data.transcript;
+        setVoiceTranscript(text);
+        toast.success("Voice transcript ready for review!");
+
+        // If title is empty, use first few words, and description with full transcript
+        if (!form.title.trim()) {
+          const titleSnippet = text.slice(0, 70);
+          setForm((prev) => ({
+            ...prev,
+            title: titleSnippet,
+            description: prev.description ? `${prev.description}\n${text}` : text,
+          }));
+        } else {
+          setForm((prev) => ({
+            ...prev,
+            description: prev.description ? `${prev.description}\n${text}` : text,
+          }));
+        }
+      } else {
+        toast.error("Could not transcribe speech. Please type your complaint.");
+      }
+    } catch (err) {
+      toast.dismiss(toastId);
+      toast.error("Speech transcription failed. Please type manually.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   // Handle What3Words resolution
   const handleResolve3Words = async () => {
     if (!w3wInput.trim()) return;
+    const formatted = format3Words(w3wInput);
+    if (!isValid3Words(formatted)) {
+      setError("Invalid what3words format (should be word.word.word)");
+      toast.error("Invalid What3Words address");
+      return;
+    }
+
     setW3wResolving(true);
+    setError(null);
     try {
-      const coords = await convertToCoordinates(w3wInput);
+      const coords = await convertToCoordinates(formatted);
+      if (!coords) {
+        setError("Could not locate that what3words address");
+        toast.error("What3Words address not found");
+        return;
+      }
       const address = await reverseGeocode(coords.lat, coords.lng);
-      const formattedW3w = format3Words(w3wInput);
-      setForm((cur) => ({
-        ...cur,
+      setForm((current) => ({
+        ...current,
         lat: coords.lat,
         lng: coords.lng,
         address,
-        what3words: formattedW3w,
+        what3words: formatted,
       }));
-      setW3wInput(formattedW3w);
-      toast.success(`Resolved ${formattedW3w} to GPS coordinates!`);
+      setW3wInput(formatted);
+      toast.success(`Located: ${formatted}`);
     } catch {
-      toast.error("Could not resolve 3-word address. Please check spelling.");
+      setError("Failed to resolve what3words address");
     } finally {
       setW3wResolving(false);
     }
   };
 
+  // Handle Location from Leaflet Map Picker
+  const handleMapLocationSelect = async (lat: number, lng: number) => {
+    setError(null);
+    const address = await reverseGeocode(lat, lng);
+    const w3w = await convertTo3Words(lat, lng);
+    setForm((current) => ({
+      ...current,
+      lat,
+      lng,
+      address,
+      what3words: w3w,
+    }));
+    setW3wInput(w3w);
+  };
+
+  // Build Multipart Form Data
   const formData = useMemo(() => {
     const data = new FormData();
     data.append("title", form.title);
     data.append("description", form.description);
     data.append("category", form.category);
-    data.append("lat", String(form.lat || ""));
-    data.append("lng", String(form.lng || ""));
+    data.append("language", selectedLanguage);
+    if (form.lat !== null) data.append("lat", String(form.lat));
+    if (form.lng !== null) data.append("lng", String(form.lng));
     data.append("address", form.address);
     if (form.what3words) data.append("what3words", form.what3words);
     if (form.landmark) data.append("landmark", form.landmark);
     if (form.image) data.append("image", form.image);
+    if (voiceTranscript) {
+      data.append("voiceInput", "true");
+      data.append("voiceTranscript", voiceTranscript);
+    }
     return data;
-  }, [form]);
+  }, [form, selectedLanguage, voiceTranscript]);
 
   // Handle Photo & Gemini Vision Categorization
   const handleImage = async (file: File | null) => {
@@ -198,17 +348,15 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
           if (res.data?.success) {
             const data = res.data;
             toast.dismiss(toastId);
-            toast.success(`AI Identified: ${data.detectedCategory.toUpperCase()} (${data.severity} priority)`);
 
-            setAiInsight(`AI Confidence ${(data.confidence * 100).toFixed(0)}% · Severity: ${data.severity}`);
-
-            setForm((cur) => ({
-              ...cur,
-              category: (data.detectedCategory as ComplaintCategory) || cur.category,
-              title: cur.title || data.suggestedTitle || cur.title,
-              description: cur.description || data.suggestedDescription || cur.description,
-              landmark: data.detectedLandmarks?.length ? data.detectedLandmarks.join(", ") : cur.landmark,
-            }));
+            if (data.category && categories.includes(data.category)) {
+              setForm((current) => ({
+                ...current,
+                category: data.category,
+                title: current.title || data.suggestedTitle || `Reported ${getCategoryLabel(data.category)}`,
+              }));
+              toast.success(`AI Identified: ${getCategoryLabel(data.category)} (${Math.round((data.confidence || 0.9) * 100)}% match)`);
+            }
           }
         } catch {
           toast.dismiss(toastId);
@@ -223,33 +371,34 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
     }
   };
 
-  // Next step navigation with duplicate check
-  async function nextStep(): Promise<void> {
+  function handleNext(): void {
     setError(null);
     if (step === 1) {
-      if (!form.title.trim() || !form.description.trim() || !form.category) {
-        setError("Title, description, and category are required");
-        toast.error("Please fill in all details");
+      if (!form.title.trim()) {
+        setError("Please enter a title for the issue");
+        toast.error("Title is required");
+        return;
+      }
+      if (!form.description.trim()) {
+        setError("Please provide details in the description");
+        toast.error("Description is required");
         return;
       }
 
-      // Check duplicate on step 1
+      // Check duplicates
       try {
-        const dupRes = await aiAPI.checkDuplicates({
+        void aiAPI.checkDuplicates({
           title: form.title,
           description: form.description,
           category: form.category,
-          lat: form.lat || undefined,
-          lng: form.lng || undefined,
+          lat: form.lat ?? undefined,
+          lng: form.lng ?? undefined,
+        }).then((res) => {
+          if (res.data?.isDuplicate && res.data.matches?.[0]) {
+            setDuplicateWarning(res.data.matches[0]);
+          }
         });
-
-        if (dupRes.data?.isDuplicate && dupRes.data.matchedComplaint) {
-          setDuplicateWarning(dupRes.data.matchedComplaint);
-          toast("Potential similar complaint detected in this area!", { icon: "⚠️" });
-        }
-      } catch {
-        // Continue
-      }
+      } catch {}
     }
 
     if (step === 2) {
@@ -272,15 +421,15 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
   async function submitNow(): Promise<void> {
     setSubmitting(true);
     setError(null);
-    const toastId = toast.loading(t("submitting"));
+    const toastId = toast.loading(t("submitting", "Registering grievance..."));
     try {
       const complaint = await submitComplaint(formData);
       toast.dismiss(toastId);
-      toast.success(`${t("success_msg")} #${complaint._id.slice(-6)}`);
+      toast.success(`${t("success_msg", "Complaint registered successfully!")} #${complaint._id.slice(-6)}`);
       onSuccess(complaint);
     } catch (submitError: any) {
       toast.dismiss(toastId);
-      const msg = submitError instanceof Error ? submitError.message : t("error_msg");
+      const msg = submitError instanceof Error ? submitError.message : t("error_msg", "Submission failed");
       setError(msg);
       toast.error(msg);
     } finally {
@@ -291,27 +440,29 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
   async function submitNowForce(): Promise<void> {
     setSubmitting(true);
     setError(null);
-    const toastId = toast.loading(t("submitting"));
+    const toastId = toast.loading(t("submitting", "Registering grievance..."));
     try {
       const forceData = new FormData();
       forceData.append("title", form.title);
       forceData.append("description", form.description);
       forceData.append("category", form.category);
+      forceData.append("language", selectedLanguage);
       forceData.append("lat", String(form.lat || ""));
       forceData.append("lng", String(form.lng || ""));
       forceData.append("address", form.address);
       if (form.what3words) forceData.append("what3words", form.what3words);
       if (form.landmark) forceData.append("landmark", form.landmark);
       if (form.image) forceData.append("image", form.image);
+      if (voiceTranscript) forceData.append("voiceTranscript", voiceTranscript);
       forceData.append("forceCreate", "true");
 
       const complaint = await submitComplaint(forceData);
       toast.dismiss(toastId);
-      toast.success(`${t("success_msg")} #${complaint._id.slice(-6)}`);
+      toast.success(`${t("success_msg", "Complaint registered successfully!")} #${complaint._id.slice(-6)}`);
       onSuccess(complaint);
     } catch (submitError: any) {
       toast.dismiss(toastId);
-      const msg = submitError instanceof Error ? submitError.message : t("error_msg");
+      const msg = submitError instanceof Error ? submitError.message : t("error_msg", "Submission failed");
       setError(msg);
       toast.error(msg);
     } finally {
@@ -328,7 +479,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
     setError(null);
     try {
       const nearby = await complaintsAPI.getNearby(form.lat, form.lng, 50);
-      if (nearby.data.complaints.length > 0) {
+      if (nearby.data.complaints?.length > 0) {
         setNearbyComplaints(nearby.data.complaints);
         setShowNearbyModal(true);
         setSubmitting(false);
@@ -341,12 +492,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
     }
   }
 
-  const stepLabels = [
-    t("step1", "Details"),
-    t("step2", "Location"),
-    t("step3", "Photo"),
-    t("step4", "Review"),
-  ];
+  const stepLabels = ["Details", "Location", "Photo Proof", "Review & Submit"];
 
   return (
     <div className="space-y-6">
@@ -376,7 +522,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
         <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 text-xs space-y-2">
           <div className="flex items-center gap-2 font-bold text-amber-800">
             <AlertTriangle className="size-4 text-amber-600" />
-            <span>{t("duplicate_alert_title", "Similar Open Issue Detected Nearby")}</span>
+            <span>Similar Open Issue Detected Nearby</span>
           </div>
           <p className="text-slate-700">
             "{duplicateWarning.title}" was reported recently in this area.
@@ -391,7 +537,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
                 window.open(`/complaints/${duplicateWarning._id}`, "_blank");
               }}
             >
-              {t("buttons.view_existing", "View & Upvote")}
+              View & Upvote
             </Button>
             <Button
               type="button"
@@ -400,7 +546,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
               className="text-xs text-amber-800 hover:bg-amber-100"
               onClick={() => setDuplicateWarning(null)}
             >
-              {t("buttons.proceed", "Proceed Anyway")}
+              Proceed Anyway
             </Button>
           </div>
         </div>
@@ -414,17 +560,95 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
         </div>
       )}
 
-      {/* ── Step 1 : Details ── */}
+      {/* ── Step 1 : Details & Multilingual Input ── */}
       {step === 1 && (
         <div className="space-y-4">
+          {/* Feature 6: Language Selection */}
+          <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-200">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+              <Languages className="size-4 text-[#D95D0F]" />
+              <span>Complaint Language:</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {[
+                { code: "en", label: "English" },
+                { code: "hi", label: "हिन्दी" },
+                { code: "mr", label: "मराठी" },
+              ].map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => setSelectedLanguage(lang.code as any)}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    selectedLanguage === lang.code
+                      ? "bg-[#D95D0F] text-white shadow-sm"
+                      : "bg-white text-slate-700 border border-stone-300 hover:bg-stone-100"
+                  }`}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature 7: Voice Speech-to-Text Input Section */}
+          <div className="p-3.5 bg-gradient-to-r from-orange-50/60 to-amber-50/60 rounded-xl border border-orange-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Volume2 className="size-4 text-[#D95D0F]" />
+                <span className="text-xs font-bold text-slate-800">
+                  Voice Complaint Submission (Sarvam AI)
+                </span>
+              </div>
+              {!isRecording ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={startRecording}
+                  disabled={isTranscribing}
+                  className="text-xs font-bold border-[#D95D0F] text-[#D95D0F] hover:bg-orange-50 h-8"
+                >
+                  <Mic className="size-3.5 mr-1" />
+                  Speak in {selectedLanguage === "hi" ? "Hindi" : selectedLanguage === "mr" ? "Marathi" : "English"}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={stopRecording}
+                  className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white animate-pulse h-8"
+                >
+                  <MicOff className="size-3.5 mr-1" />
+                  Stop Recording ({recordingSeconds}s)
+                </Button>
+              )}
+            </div>
+
+            {isTranscribing && (
+              <div className="flex items-center gap-2 text-xs font-medium text-[#D95D0F] mt-2">
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>Processing speech and translating via Sarvam AI Mayura...</span>
+              </div>
+            )}
+
+            {voiceTranscript && (
+              <div className="mt-2 p-2 bg-white rounded-lg border border-orange-200 text-xs text-slate-700">
+                <span className="font-bold text-slate-900 block mb-0.5">Recorded Transcript:</span>
+                "{voiceTranscript}"
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              {t("title_label", "Complaint Title")} *
+              Complaint Title *
             </label>
             <Input
               value={form.title}
               onChange={(e) => setForm((cur) => ({ ...cur, title: e.target.value }))}
-              placeholder={t("title_placeholder", "e.g., Deep pothole on road near Metro Gate 2")}
+              onBlur={fetchAiAssist}
+              placeholder="e.g., Deep pothole on road near Metro Gate 2"
               maxLength={200}
               className="border-stone-300"
             />
@@ -432,7 +656,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              {t("category_label", "Category")} *
+              Category *
             </label>
             <select
               value={form.category}
@@ -449,17 +673,43 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              {t("description_label", "Detailed Description")} *
+              Detailed Description *
             </label>
             <Textarea
               value={form.description}
               onChange={(e) => setForm((cur) => ({ ...cur, description: e.target.value }))}
-              placeholder={t("description_placeholder", "Describe the issue, size, hazards, or history...")}
+              onBlur={fetchAiAssist}
+              placeholder="Describe the civic issue, approximate dimensions, traffic safety hazard, or history..."
               maxLength={2000}
               className="min-h-28 border-stone-300"
             />
             <span className="text-[11px] text-slate-400 mt-1 block">{form.description.length}/2000</span>
           </div>
+
+          {/* Feature 5: AI Assistant Suggestion Box */}
+          {aiInsight && (
+            <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-purple-900 flex items-center gap-1.5">
+                  <Sparkles className="size-4 text-purple-600" />
+                  Gemini AI Civic Classification
+                </span>
+                <Badge className="bg-purple-600 text-white text-[10px]">
+                  {Math.round((aiInsight.confidence || 0.9) * 100)}% Confidence
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2 text-slate-700">
+                <span><strong>Dept:</strong> {aiInsight.department}</span>
+                <span>•</span>
+                <span><strong>Severity:</strong> <span className="capitalize font-bold text-amber-800">{aiInsight.severity}</span></span>
+              </div>
+              {aiInsight.suggestedAction && (
+                <p className="text-slate-600 italic">
+                  Suggested Action: {aiInsight.suggestedAction}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -467,7 +717,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
       {step === 2 && (
         <div className="space-y-5">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            {t("location_label", "Pinpoint Issue Location")}
+            Pinpoint Issue Location in India
           </p>
 
           {/* Location Modes */}
@@ -486,7 +736,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
               }`}
             >
               {locating ? <Loader2 className="size-4 animate-spin" /> : <MapPin className="size-4" />}
-              {t("location_mode_gps", "Use GPS Fix")}
+              Use GPS Fix
             </button>
 
             <button
@@ -498,8 +748,8 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
                   : "border-stone-200 text-slate-600 hover:border-orange-300"
               }`}
             >
-              <span>🗺️</span>
-              {t("location_mode_map", "Pin on Map")}
+              <Layers className="size-4" />
+              Pin on Map
             </button>
 
             <button
@@ -511,16 +761,13 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
                   : "border-stone-200 text-slate-600 hover:border-orange-300"
               }`}
             >
-              <span className="font-extrabold text-[#D95D0F]">///</span>
-              {t("location_mode_w3w", "What3Words")}
+              <span className="text-[#D95D0F] font-black text-sm">///</span>
+              what3words
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                setLocationMode("manual");
-                setForm((cur) => ({ ...cur, lat: null, lng: null, what3words: "" }));
-              }}
+              onClick={() => setLocationMode("manual")}
               className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-xs font-bold transition ${
                 locationMode === "manual"
                   ? "border-[#D95D0F] bg-orange-50/60 text-[#D95D0F]"
@@ -528,201 +775,161 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
               }`}
             >
               <Pencil className="size-4" />
-              {t("location_mode_manual", "Type Address")}
+              Manual Address
             </button>
           </div>
 
-          {/* What3Words Mode */}
-          {locationMode === "w3w" && (
-            <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-200 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                <span className="text-[#D95D0F] text-base font-extrabold">///</span>
-                <span>Enter 3-Word Address</span>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={w3wInput}
-                  onChange={(e) => setW3wInput(e.target.value)}
-                  placeholder="e.g. filled.count.soap"
-                  className="bg-white border-stone-300 font-mono text-xs"
-                />
-                <Button
-                  type="button"
-                  onClick={handleResolve3Words}
-                  disabled={w3wResolving || !w3wInput.trim()}
-                  className="bg-[#D95D0F] text-white text-xs font-bold"
-                >
-                  {w3wResolving ? <Loader2 className="size-4 animate-spin" /> : "Resolve"}
-                </Button>
-              </div>
-              <p className="text-[11px] text-slate-500">{t("w3w_hint")}</p>
-            </div>
-          )}
-
-          {/* Map picker */}
+          {/* Location Mode UI */}
           {locationMode === "map" && (
-            <div className="rounded-xl overflow-hidden border border-stone-200">
+            <div className="space-y-2">
               <MapPicker
                 value={form.lat && form.lng ? { lat: form.lat, lng: form.lng } : null}
-                onChange={async (loc: { lat: number; lng: number; address: string }) => {
-                  const w3w = await convertTo3Words(loc.lat, loc.lng);
+                onChange={(loc) => {
                   setForm((cur) => ({
                     ...cur,
                     lat: loc.lat,
                     lng: loc.lng,
-                    address: loc.address,
-                    what3words: w3w,
+                    address: loc.address || cur.address,
                   }));
-                  setW3wInput(w3w);
-                  toast.success(`Pinned at: ${w3w}`);
+                  void convertTo3Words(loc.lat, loc.lng).then((w3w) => {
+                    setForm((cur) => ({ ...cur, what3words: w3w }));
+                    setW3wInput(w3w);
+                  });
                 }}
               />
+              <p className="text-[11px] text-slate-500 text-center">
+                Click anywhere on the map of India to set exact civic grievance coordinates.
+              </p>
             </div>
           )}
 
-          {/* Address & Landmark Inputs */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Full Street Address *
+          {locationMode === "w3w" && (
+            <div className="space-y-2 p-4 bg-orange-50/40 rounded-xl border border-orange-200">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                what3words address (e.g. filled.count.soap)
               </label>
-              <Input
-                value={form.address}
-                onChange={(e) => setForm((cur) => ({ ...cur, address: e.target.value }))}
-                placeholder="Street name, landmark, ward number, city..."
-                className="border-stone-300"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Prominent Landmark (Optional)
-              </label>
-              <Input
-                value={form.landmark}
-                onChange={(e) => setForm((cur) => ({ ...cur, landmark: e.target.value }))}
-                placeholder="e.g. Opposite State Bank ATM / Next to Metro Pillar 42"
-                className="border-stone-300"
-              />
-            </div>
-
-            {form.what3words && (
-              <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-[#D95D0F] bg-orange-100/70 px-3 py-1.5 rounded-lg border border-orange-200">
-                <span>Micro-Location:</span>
-                <span>{form.what3words}</span>
+              <div className="flex gap-2">
+                <Input
+                  value={w3wInput}
+                  onChange={(e) => setW3wInput(e.target.value)}
+                  placeholder="/// word.word.word"
+                  className="text-xs"
+                />
+                <Button
+                  type="button"
+                  onClick={handleResolve3Words}
+                  disabled={w3wResolving}
+                  className="bg-[#D95D0F] hover:bg-[#b84d0b] text-white text-xs font-bold"
+                >
+                  {w3wResolving ? <Loader2 className="size-3 animate-spin" /> : "Locate"}
+                </Button>
               </div>
-            )}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Address / Landmark *
+            </label>
+            <Input
+              value={form.address}
+              onChange={(e) => setForm((cur) => ({ ...cur, address: e.target.value }))}
+              placeholder="e.g., Near Bus Stop, Station Road, Ward 4"
+              className="border-stone-300"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Nearby Landmark (Optional)
+            </label>
+            <Input
+              value={form.landmark}
+              onChange={(e) => setForm((cur) => ({ ...cur, landmark: e.target.value }))}
+              placeholder="e.g., Opposite State Bank of India"
+              className="border-stone-300"
+            />
           </div>
         </div>
       )}
 
-      {/* ── Step 3 : Photo Proof & AI Vision ── */}
+      {/* ── Step 3 : Photo Proof ── */}
       {step === 3 && (
         <div className="space-y-4">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-            {t("photo_label", "Upload Photo Evidence")} *
-          </label>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-700">
+            Upload Evidence Photo
+          </p>
 
-          <div className="border-2 border-dashed border-stone-300 hover:border-orange-400 rounded-2xl p-6 text-center bg-stone-50/50 transition-colors">
+          <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-stone-300 rounded-2xl bg-stone-50 hover:bg-stone-100 transition cursor-pointer relative">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => void handleImage(e.target.files?.[0] || null)}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
             {form.preview ? (
-              <div className="space-y-3">
-                <div className="relative mx-auto h-48 w-full max-w-sm rounded-xl overflow-hidden shadow-md">
-                  <img src={form.preview} alt="Complaint preview" className="h-full w-full object-cover" />
-                </div>
-                {aiAnalyzing && (
-                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#D95D0F]">
-                    <Loader2 className="size-4 animate-spin" />
-                    <span>{t("ai_analyzing", "Gemini AI Vision analyzing image...")}</span>
-                  </div>
-                )}
-                {aiInsight && (
-                  <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                    <Sparkles className="size-3.5 text-emerald-600" />
-                    <span>{aiInsight}</span>
-                  </div>
-                )}
-                <div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs font-bold border-stone-300"
-                    onClick={() => setForm((cur) => ({ ...cur, image: null, preview: null }))}
-                  >
-                    Replace Photo
-                  </Button>
-                </div>
+              <div className="space-y-3 text-center">
+                <img
+                  src={form.preview}
+                  alt="Proof Preview"
+                  className="h-48 w-auto max-w-full rounded-xl object-cover border border-stone-200 shadow-sm mx-auto"
+                />
+                <p className="text-xs font-semibold text-[#D95D0F]">
+                  Click or tap to replace photo
+                </p>
               </div>
             ) : (
-              <label className="cursor-pointer space-y-3 block">
-                <div className="w-12 h-12 rounded-2xl bg-orange-100 text-[#D95D0F] flex items-center justify-center mx-auto shadow-sm">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-orange-100 text-[#D95D0F] flex items-center justify-center mx-auto">
                   <Camera className="size-6" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-800">Click to upload or drag & drop</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{t("photo_hint")}</p>
-                </div>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={(e) => handleImage(e.target.files?.[0] || null)}
-                />
-              </label>
+                <p className="text-sm font-bold text-slate-800">
+                  Tap to take a photo or upload from gallery
+                </p>
+                <p className="text-xs text-slate-500">
+                  JPEG, PNG, or WebP up to 8MB
+                </p>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ── Step 4 : Review ── */}
+      {/* ── Step 4 : Review & Submit ── */}
       {step === 4 && (
-        <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-5 text-sm">
-          <h3 className="font-bold text-slate-900 border-b pb-2 text-xs uppercase tracking-wider">
-            Review Complaint Summary
-          </h3>
-
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-stone-100">
-              <span className="text-slate-500">Title:</span>
-              <span className="font-bold text-slate-900 text-right max-w-xs truncate">{form.title}</span>
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl border border-stone-200 bg-white space-y-3 text-xs">
+            <div>
+              <span className="text-slate-400 font-bold uppercase block text-[10px]">Title</span>
+              <span className="font-bold text-sm text-slate-900">{form.title}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-stone-100">
-              <span className="text-slate-500">Category:</span>
-              <Badge variant="outline" className="font-bold uppercase text-[10px]">
-                {getCategoryLabel(form.category)}
-              </Badge>
+            <div>
+              <span className="text-slate-400 font-bold uppercase block text-[10px]">Category</span>
+              <span className="font-semibold text-slate-800 capitalize">{getCategoryLabel(form.category)}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-stone-100">
-              <span className="text-slate-500">Address:</span>
-              <span className="font-medium text-slate-800 text-right max-w-xs truncate">{form.address}</span>
+            <div>
+              <span className="text-slate-400 font-bold uppercase block text-[10px]">Location</span>
+              <span className="text-slate-800">{form.address}</span>
             </div>
-            {form.what3words && (
-              <div className="flex justify-between py-1 border-b border-stone-100">
-                <span className="text-slate-500">What3Words:</span>
-                <span className="font-mono font-bold text-[#D95D0F]">{form.what3words}</span>
-              </div>
-            )}
-            {form.landmark && (
-              <div className="flex justify-between py-1 border-b border-stone-100">
-                <span className="text-slate-500">Landmark:</span>
-                <span className="font-medium text-slate-800">{form.landmark}</span>
-              </div>
-            )}
+            <div>
+              <span className="text-slate-400 font-bold uppercase block text-[10px]">Description</span>
+              <p className="text-slate-700 whitespace-pre-line">{form.description}</p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Button Navigation */}
+      {/* Action Buttons */}
       <div className="flex items-center justify-between pt-4 border-t border-stone-200">
         {step > 1 ? (
           <Button
             type="button"
             variant="outline"
-            onClick={() => setStep((cur) => (cur - 1) as 1 | 2 | 3 | 4)}
-            className="text-xs font-bold uppercase tracking-wider"
+            onClick={() => setStep((cur) => Math.max(1, cur - 1) as 1 | 2 | 3 | 4)}
+            className="text-xs font-bold"
           >
             <ChevronLeft className="size-4 mr-1" />
-            {t("buttons.back", "Back")}
+            Back
           </Button>
         ) : (
           <div />
@@ -731,8 +938,8 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
         {step < 4 ? (
           <Button
             type="button"
-            onClick={nextStep}
-            className="bg-[#D95D0F] hover:bg-orange-700 text-white text-xs font-bold uppercase tracking-wider px-6"
+            onClick={handleNext}
+            className="bg-[#D95D0F] hover:bg-[#b84d0b] text-white text-xs font-bold px-6"
           >
             Next Step
             <ArrowRight className="size-4 ml-1" />
@@ -742,21 +949,19 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
             type="button"
             onClick={handleReviewSubmit}
             disabled={submitting}
-            className="bg-[#D95D0F] hover:bg-orange-700 text-white text-xs font-bold uppercase tracking-wider px-8"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-8 shadow-md shadow-emerald-200"
           >
             {submitting ? (
-              <>
-                <Loader2 className="size-4 animate-spin mr-2" />
-                {t("submitting")}
-              </>
+              <Loader2 className="size-4 animate-spin mr-1.5" />
             ) : (
-              t("buttons.submit")
+              <CheckCircle2 className="size-4 mr-1.5" />
             )}
+            Submit Grievance
           </Button>
         )}
       </div>
 
-      {/* Nearby modal */}
+      {/* Nearby Duplicate Verification Modal */}
       {showNearbyModal && (
         <NearbyComplaintsModal
           complaints={nearbyComplaints}
@@ -764,7 +969,10 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
             window.open(`/complaints/${id}`, "_blank");
             setShowNearbyModal(false);
           }}
-          onCreate={submitNowForce}
+          onCreate={() => {
+            setShowNearbyModal(false);
+            void submitNowForce();
+          }}
           onClose={() => setShowNearbyModal(false)}
         />
       )}

@@ -1,6 +1,10 @@
 import { Router, Request, Response } from "express";
 import { requireAuth } from "../middleware/auth";
 import { Complaint } from "../models/Complaint";
+import { uploadSingle } from "../middleware/upload";
+import { getComplaintAssistance } from "../services/ai/gemini.service";
+import { translateText } from "../services/translation/sarvamTranslation.service";
+import { transcribeAudio } from "../services/transcription/sarvamSpeech.service";
 
 const router = Router();
 
@@ -450,5 +454,75 @@ Tone: professional, factual, action-oriented. Format with clear section headers 
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+// ─── Feature 5: AI Complaint Assistant ──────────────────────────────────────
+// POST /api/ai/complaint-assist
+router.post("/complaint-assist", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { title = "", description = "" } = req.body as { title?: string; description?: string };
+    const assistance = await getComplaintAssistance(title, description);
+    res.json({
+      success: true,
+      ...assistance,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ─── Feature 6: Sarvam AI Multi-Language Translation ────────────────────────
+// POST /api/ai/translate and POST /api/translation
+const handleTranslation = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { text = "", sourceLanguage = "hi-IN", targetLanguage = "en-IN" } = req.body;
+    const result = await translateText(text, sourceLanguage, targetLanguage);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+router.post("/translate", handleTranslation);
+router.post("/translation", handleTranslation);
+
+// ─── Feature 7: Sarvam AI Voice Speech-to-Text Transcription ─────────────────
+// POST /api/ai/transcribe and POST /api/transcription
+const handleTranscription = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const languageCode = req.body.languageCode || req.body.language || "hi-IN";
+    let audioBuffer: Buffer | null = null;
+    let mimeType = "audio/wav";
+
+    if (req.file?.buffer) {
+      audioBuffer = req.file.buffer;
+      mimeType = req.file.mimetype || "audio/wav";
+    } else if (req.body.audioBase64) {
+      const cleanBase64 = req.body.audioBase64.replace(/^data:audio\/[a-zA-Z0-9]+;base64,/, "");
+      audioBuffer = Buffer.from(cleanBase64, "base64");
+    }
+
+    if (!audioBuffer) {
+      res.status(400).json({
+        success: false,
+        message: "Audio file or audioBase64 payload is required",
+      });
+      return;
+    }
+
+    const result = await transcribeAudio(audioBuffer, languageCode, mimeType);
+    res.json({
+      success: result.success,
+      transcript: result.transcript,
+      languageCode: result.languageCode,
+      error: result.error,
+      provider: result.provider,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+router.post("/transcribe", uploadSingle, handleTranscription);
+router.post("/transcription", uploadSingle, handleTranscription);
 
 export default router;

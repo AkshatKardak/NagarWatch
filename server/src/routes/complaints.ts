@@ -5,6 +5,7 @@ import {
   Complaint,
   type ComplaintCategory,
   type ComplaintStatus,
+  type ComplaintPriority,
   type IComplaint,
 } from "../models/Complaint";
 import { Notification } from "../models/Notification";
@@ -18,6 +19,13 @@ import { calculatePriorityScore } from "../services/priorityService";
 import { assignWardToComplaint, findNearbyComplaints } from "../services/geoService";
 import { getSLADeadline } from "../services/slaService";
 import { sendResolutionEmail } from "../services/emailService";
+import {
+  submitResolutionProof,
+  verifyCitizenResolution,
+  reopenComplaint,
+} from "../services/complaints/verification.service";
+import { translateText } from "../services/translation/sarvamTranslation.service";
+import { getComplaintAssistance } from "../services/ai/gemini.service";
 import { getIO } from "../socket";
 
 const router = Router();
@@ -32,7 +40,17 @@ const validCategories = new Set<ComplaintCategory>([
   "other",
 ]);
 
-const validStatuses = new Set<string>(["pending", "in_progress", "resolved", "rejected"]);
+const validStatuses = new Set<string>([
+  "pending",
+  "in_progress",
+  "resolution_submitted",
+  "awaiting_citizen_verification",
+  "verified_resolved",
+  "resolved",
+  "rejected",
+  "escalated",
+  "reopened",
+]);
 
 interface CreateComplaintBody {
   title?: string;
@@ -315,6 +333,38 @@ router.post(
         createdAt: new Date(),
       });
 
+      // Multilingual & AI Assistance enrichment
+      const lang = body.language || "en";
+      let normTitle = body.title;
+      let normDesc = body.description;
+
+      if (lang !== "en" && lang !== "en-IN") {
+        try {
+          const titleTr = await translateText(body.title, lang, "en-IN");
+          const descTr = await translateText(body.description, lang, "en-IN");
+          if (titleTr.translatedText) normTitle = titleTr.translatedText;
+          if (descTr.translatedText) normDesc = descTr.translatedText;
+        } catch {}
+      }
+
+      let aiAssistance: {
+        suggestedCategory: ComplaintCategory;
+        severity: ComplaintPriority;
+        department: string;
+        confidence: number;
+        source: "GEMINI_AI" | "RULE_ENGINE";
+      } = {
+        suggestedCategory: finalCategory,
+        severity: priority,
+        department: "General Administration",
+        confidence: 0.85,
+        source: "RULE_ENGINE",
+      };
+
+      try {
+        aiAssistance = await getComplaintAssistance(normTitle, normDesc);
+      } catch {}
+
       const complaint = new Complaint({
         title: body.title,
         description: body.description,
@@ -349,6 +399,34 @@ router.post(
             note: "Complaint submitted",
           },
         ],
+        originalContent: {
+          language: lang,
+          title: body.title,
+          description: body.description,
+        },
+        normalizedContent: {
+          language: "en-IN",
+          title: normTitle,
+          description: normDesc,
+        },
+        voiceInput: {
+          enabled: body.voiceInput === "true" || Boolean(body.voiceTranscript),
+          language: lang,
+          transcript: body.voiceTranscript || body.description,
+        },
+        aiRecommendation: {
+          category: aiAssistance.suggestedCategory,
+          severity: aiAssistance.severity,
+          department: aiAssistance.department,
+          confidence: aiAssistance.confidence,
+          generatedAt: new Date(),
+        },
+        finalClassification: {
+          category: finalCategory,
+          priority,
+          department: aiAssistance.department,
+          source: aiAssistance.source === "GEMINI_AI" ? "AI_RULE_ENGINE" : "MANUAL",
+        },
       });
 
       if (ward) {
@@ -889,6 +967,103 @@ router.post(
       res.json({ success: true, message: "Complaint resolved successfully", complaint });
     } catch (error) {
       next(error);
+    }
+  }
+);
+
+// ─── Feature 3: Authority Marks Resolution Proof (Awaiting Citizen Verification) ─
+// POST /api/complaints/:id/resolution
+router.post(
+  "/:id/resolution",
+  requireAuth,
+  attachUser,
+  uploadSingle,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      let afterImageUrl = "https://placehold.co/600x400?text=Work+Completed";
+      if (req.file) {
+        afterImageUrl = await uploadImage(req.file.buffer, "nagarwatch/resolutions");
+      } else if (req.body.afterImage) {
+        afterImageUrl = req.body.afterImage;
+      }
+
+      const note = req.body.resolutionNote || req.body.note || "Work order completed and verified by authority.";
+      const complaintId = String(req.params.id);
+      const complaint = await submitResolutionProof({
+        complaintId,
+        afterImageUrl,
+        note,
+        userId: req.user?._id,
+      });
+
+      res.json({
+        success: true,
+        message: "Resolution proof submitted. Awaiting citizen verification.",
+        complaint,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ─── Feature 3: Citizen Verifies Resolution ("Yes, Issue Resolved") ──────────
+// POST /api/complaints/:id/verify
+router.post(
+  "/:id/verify",
+  requireAuth,
+  attachUser,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+      const complaintId = String(req.params.id);
+      const complaint = await verifyCitizenResolution({
+        complaintId,
+        userId: req.user._id,
+      });
+
+      res.json({
+        success: true,
+        message: "Thank you! Issue marked as verified and resolved.",
+        complaint,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ─── Feature 3: Citizen Rejects Resolution ("No, Issue Still Exists") ────────
+// POST /api/complaints/:id/reopen
+router.post(
+  "/:id/reopen",
+  requireAuth,
+  attachUser,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+      const { reason = "Issue still exists", comment = "" } = req.body;
+      const complaintId = String(req.params.id);
+      const complaint = await reopenComplaint({
+        complaintId,
+        userId: req.user._id,
+        rejectionReason: reason,
+        comment,
+      });
+
+      res.json({
+        success: true,
+        message: "Complaint reopened. Authority has been notified for re-inspection.",
+        complaint,
+      });
+    } catch (err) {
+      next(err);
     }
   }
 );

@@ -9,7 +9,17 @@ export type ComplaintCategory =
   | "drainage"
   | "other";
 
-export type ComplaintStatus = "pending" | "in_progress" | "resolved";
+export type ComplaintStatus =
+  | "pending"
+  | "in_progress"
+  | "resolution_submitted"
+  | "awaiting_citizen_verification"
+  | "verified_resolved"
+  | "resolved"
+  | "rejected"
+  | "escalated"
+  | "reopened";
+
 export type ComplaintPriority = "low" | "medium" | "high" | "critical";
 
 export interface ICitizenFeedback {
@@ -17,6 +27,14 @@ export interface ICitizenFeedback {
   comment?: string;
   submittedAt: Date;
   citizenId: Types.ObjectId;
+}
+
+export interface IResolutionAttempt {
+  attemptNumber: number;
+  afterImage: string;
+  uploadedBy: Types.ObjectId;
+  uploadedAt: Date;
+  verificationStatus: string;
 }
 
 export interface IComplaint {
@@ -52,6 +70,54 @@ export interface IComplaint {
   citizenFeedback?: ICitizenFeedback;
   resolutionNote?: string;
   resolvedAt?: Date;
+
+  // New Citizen Resolution Verification Fields (Feature 3)
+  resolutionProof?: {
+    beforeImage?: string;
+    afterImage: string;
+    uploadedAt: Date;
+    uploadedBy: Types.ObjectId;
+  };
+  verification?: {
+    status: "PENDING" | "VERIFIED" | "REJECTED";
+    verifiedBy?: Types.ObjectId;
+    verifiedAt?: Date;
+    rejectionReason?: string;
+  };
+  resolutionAttempts?: IResolutionAttempt[];
+
+  // New AI Assistant Recommendation Fields (Feature 5)
+  aiRecommendation?: {
+    category?: string;
+    severity?: string;
+    department?: string;
+    confidence?: number;
+    generatedAt?: Date;
+  };
+  finalClassification?: {
+    category?: string;
+    priority?: string;
+    department?: string;
+    source?: string; // "AI_RULE_ENGINE" | "MANUAL"
+  };
+
+  // Multilingual and Voice Fields (Features 6 & 7)
+  originalContent?: {
+    language: string;
+    title: string;
+    description: string;
+  };
+  normalizedContent?: {
+    language: string;
+    title: string;
+    description: string;
+  };
+  voiceInput?: {
+    enabled: boolean;
+    language: string;
+    transcript: string;
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +151,17 @@ const citizenFeedbackSchema = new Schema(
   { _id: false }
 );
 
+const resolutionAttemptSchema = new Schema(
+  {
+    attemptNumber: { type: Number, required: true },
+    afterImage: { type: String, required: true },
+    uploadedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    uploadedAt: { type: Date, default: Date.now },
+    verificationStatus: { type: String, default: "PENDING" },
+  },
+  { _id: false }
+);
+
 const complaintSchema = new Schema<IComplaint>(
   {
     title: { type: String, required: true, trim: true, maxlength: 200 },
@@ -96,7 +173,17 @@ const complaintSchema = new Schema<IComplaint>(
     },
     status: {
       type: String,
-      enum: ["pending", "in_progress", "resolved"],
+      enum: [
+        "pending",
+        "in_progress",
+        "resolution_submitted",
+        "awaiting_citizen_verification",
+        "verified_resolved",
+        "resolved",
+        "rejected",
+        "escalated",
+        "reopened",
+      ],
       default: "pending",
     },
     priority: {
@@ -145,14 +232,69 @@ const complaintSchema = new Schema<IComplaint>(
     citizenFeedback: { type: citizenFeedbackSchema },
     resolutionNote: { type: String },
     resolvedAt: { type: Date },
+
+    // Citizen Resolution Verification Lifecycle Fields
+    resolutionProof: {
+      beforeImage: { type: String },
+      afterImage: { type: String },
+      uploadedAt: { type: Date },
+      uploadedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    },
+    verification: {
+      status: {
+        type: String,
+        enum: ["PENDING", "VERIFIED", "REJECTED"],
+        default: "PENDING",
+      },
+      verifiedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      verifiedAt: { type: Date },
+      rejectionReason: { type: String },
+    },
+    resolutionAttempts: { type: [resolutionAttemptSchema], default: [] },
+
+    // AI Assistant Recommendations
+    aiRecommendation: {
+      category: { type: String },
+      severity: { type: String },
+      department: { type: String },
+      confidence: { type: Number },
+      generatedAt: { type: Date },
+    },
+    finalClassification: {
+      category: { type: String },
+      priority: { type: String },
+      department: { type: String },
+      source: { type: String, default: "MANUAL" },
+    },
+
+    // Multi-Language & Voice
+    originalContent: {
+      language: { type: String, default: "en" },
+      title: { type: String },
+      description: { type: String },
+    },
+    normalizedContent: {
+      language: { type: String, default: "en" },
+      title: { type: String },
+      description: { type: String },
+    },
+    voiceInput: {
+      enabled: { type: Boolean, default: false },
+      language: { type: String },
+      transcript: { type: String },
+    },
   },
   { timestamps: true }
 );
 
+// Indexes
 complaintSchema.index({ location: "2dsphere" });
 complaintSchema.index({ status: 1, ward: 1, category: 1 });
 complaintSchema.index({ priorityScore: -1 });
 complaintSchema.index({ "sla.deadline": 1, status: 1 });
+complaintSchema.index({ assignedContractor: 1 });
+complaintSchema.index({ "verification.status": 1 });
+complaintSchema.index({ createdAt: -1 });
 
 export const Complaint = mongoose.model<IComplaint>("Complaint", complaintSchema);
 export default Complaint;

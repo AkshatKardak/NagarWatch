@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { CitizenFeedbackModal } from "@/components/complaints/CitizenFeedbackModal"
+import { CitizenVerificationCard } from "@/components/complaints/CitizenVerificationCard"
 import { useAuth } from "@/hooks/useAuth"
 
 import { useComplaintStore } from "@/store/complaintStore"
@@ -273,6 +274,25 @@ export default function PublicComplaintDetail({ params }: PageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
         {/* LEFT COLUMN */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Feature 3: Citizen Resolution Verification Action Card */}
+          {(complaint.status === "awaiting_citizen_verification" ||
+            complaint.status === "resolution_submitted") && (
+            <CitizenVerificationCard
+              complaintId={complaint._id}
+              beforeImage={complaint.images?.before}
+              afterImage={complaint.images?.after || (complaint as any).resolutionProof?.afterImage}
+              resolutionNote={complaint.resolutionNote}
+              onVerified={async () => {
+                toast.success("Resolution verified successfully!");
+                await fetchComplaintById(id);
+              }}
+              onReopened={async () => {
+                toast.error("Issue reopened and reassigned for remediation.");
+                await fetchComplaintById(id);
+              }}
+            />
+          )}
+
           {/* Images Card */}
           <Card className="overflow-hidden border border-gray-200 shadow-sm bg-white">
             <CardContent className="p-4 space-y-4">

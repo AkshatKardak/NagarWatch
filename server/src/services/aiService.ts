@@ -1,4 +1,14 @@
-import Complaint from "../models/Complaint";
+import {
+  getComplaintAssistance,
+  getRuleBasedAssistance,
+  AIAssistanceResult,
+} from "./ai/gemini.service";
+import { translateText, TranslationResult } from "./translation/sarvamTranslation.service";
+import { transcribeAudio, TranscriptionResult } from "./transcription/sarvamSpeech.service";
+
+export * from "./ai/gemini.service";
+export * from "./translation/sarvamTranslation.service";
+export * from "./transcription/sarvamSpeech.service";
 
 const GEMINI_CANDIDATE_MODELS = [
   process.env.GEMINI_MODEL || "gemini-2.0-flash",
@@ -122,14 +132,7 @@ Return ONLY valid JSON. No explanation, no markdown.
     const cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
     return JSON.parse(cleaned);
   } catch {
-    return {
-      category: "pothole",
-      priority: "medium",
-      keywords: ["road", "repair"],
-      suggestedAction: "Inspection required by ward field team",
-      estimatedSLAHours: 48,
-      confidence: 0.8,
-    };
+    return getRuleBasedAssistance(title, description);
   }
 }
 
@@ -137,4 +140,7 @@ export default {
   callGemini,
   callGeminiVision,
   categorizeComplaint,
+  getComplaintAssistance,
+  translateText,
+  transcribeAudio,
 };

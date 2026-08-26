@@ -7,7 +7,16 @@ export type ComplaintCategory =
   | "drainage"
   | "other";
 
-export type ComplaintStatus = "pending" | "in_progress" | "resolved";
+export type ComplaintStatus =
+  | "pending"
+  | "in_progress"
+  | "resolution_submitted"
+  | "awaiting_citizen_verification"
+  | "verified_resolved"
+  | "resolved"
+  | "rejected"
+  | "escalated"
+  | "reopened";
 export type ComplaintPriority = "low" | "medium" | "high" | "critical";
 
 export interface ILocation {

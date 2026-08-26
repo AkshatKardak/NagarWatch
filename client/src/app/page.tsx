@@ -245,41 +245,41 @@ export default function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-[#1E293B] text-white py-14 border-y border-slate-800">
+      <section className="bg-[#1E293B] text-white py-12 border-y border-slate-800 shadow-inner">
         <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x-0 md:divide-x divide-slate-700/60">
-            <motion.div whileHover={{ scale: 1.05 }} className="px-2">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-400 mb-1">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center items-center justify-center divide-y md:divide-y-0 md:divide-x divide-slate-700/60">
+            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-orange-400 mb-1.5 tracking-tight">
                 50,000+
               </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-300 uppercase tracking-wider">
+              <div className="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider">
                 Complaints Resolved
               </div>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.05 }} className="px-2">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-emerald-400 mb-1">
+            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-emerald-400 mb-1.5 tracking-tight">
                 85.4%
               </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-300 uppercase tracking-wider">
+              <div className="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider">
                 Resolution Rate
               </div>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.05 }} className="px-2">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-blue-400 mb-1">
+            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-blue-400 mb-1.5 tracking-tight">
                 24 Hours
               </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-300 uppercase tracking-wider">
+              <div className="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider">
                 Avg Response Time
               </div>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.05 }} className="px-2">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-amber-400 mb-1">
+            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-amber-400 mb-1.5 tracking-tight">
                 15 Wards
               </div>
-              <div className="text-xs sm:text-sm font-medium text-slate-300 uppercase tracking-wider">
+              <div className="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider">
                 Under Active Watch
               </div>
             </motion.div>
@@ -596,7 +596,6 @@ export default function LandingPage() {
 
         <div className="container mx-auto px-4 md:px-6 max-w-7xl mt-8 pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
           <p>© {new Date().getFullYear()} NagarWatch. Built for Indian Municipal Governance.</p>
-          <p>Version 2.4.0 · Production Ready</p>
         </div>
       </footer>
     </div>
