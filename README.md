@@ -1,5 +1,9 @@
 # 🏙️ NagarWatch — Real-Time Civic Issue Reporting & Governance Platform
 
+<p align="center">
+  <img src="client/public/Navbar.png" alt="NagarWatch Platform" width="100%" />
+</p>
+
 > NagarWatch is a full-stack civic governance platform bridging the gap between citizens and local authorities across Indian municipalities.
 
 [![Next.js](https://img.shields.io/badge/Next.js-black?logo=next.js)](https://nextjs.org)
@@ -13,6 +17,33 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-green?logo=mongodb)](https://mongodb.com)
 [![Redis](https://img.shields.io/badge/Redis-red?logo=redis)](https://redis.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
+
+---
+
+## Problem Statement
+
+Urban cities frequently face unresolved civic issues — potholes, garbage accumulation, water leakages, and broken streetlights. Current complaint systems suffer from:
+
+- **Fragmented Channels:** Complaints scattered across helplines, WhatsApp groups, and broken portals with no centralized record.
+- **Zero Visibility:** Lack of real-time progress updates or tracking for citizens after grievance submission.
+- **Redundant Reports:** Frequent duplicate complaints for the exact same physical issue crowding municipal queues.
+- **Inefficient Triage:** Lack of automated priority ranking and intelligent department routing for authorities.
+- **No SLA Enforcement:** Absence of strict Citizens' Charter SLA accountability, resulting in indefinitely pending grievances.
+- **Unverified Repairs:** Substandard repairs marked resolved without objective citizen-side verification.
+- **Untracked Contractors:** Lack of performance benchmarks and blacklist enforcement for municipal contractors.
+
+---
+
+## Proposed Solution
+
+NagarWatch provides a centralized, transparent civic operating system where:
+
+- **Citizens** report, upvote, and track grievances in real time with multilingual (English, Hindi, Marathi) and voice input capabilities.
+- **Authorities** manage workflows, dispatch work orders to enlisted contractors, and upload photographic proof of resolution.
+- **Citizens Verify Resolutions** by reviewing Before vs After photo proofs to confirm resolution or reopen substandard work with recorded reasons.
+- **Administrators** monitor city-wide performance, explainable Ward Health scores, and Central Public Works Department (CPWD) contractor verification queues.
+- **Gemini AI** auto-categorizes complaints, assesses severity, drafts legally formatted RTI Act 2005 petitions, and compiles weekly executive summaries.
+- **Socket.IO** delivers instant real-time synchronization across map viewers, field officers, and citizen dashboards.
 
 ---
 
@@ -100,6 +131,8 @@ NagarWatch features role-based access control (RBAC).
 NagarWatch/
 ├── client/                                 # Next.js Frontend
 │   ├── public/                             # Static assets and icons
+│   │   ├── Navbar.png                      # Brand header banner
+│   │   └── favicon.png
 │   └── src/
 │       ├── app/
 │       │   ├── page.tsx                    # Landing page with hero stats bar
