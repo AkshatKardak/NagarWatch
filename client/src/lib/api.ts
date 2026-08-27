@@ -240,10 +240,10 @@ export const aiApi = {
     api.post<any>("/ai/complaint-assist", data),
 
   translate: (data: { text: string; sourceLanguage?: string; targetLanguage?: string }) =>
-    api.post<any>("/translation", data),
+    api.post<any>("/ai/translate", data),
 
   transcribe: (formData: FormData) =>
-    api.post<any>("/transcription", formData, {
+    api.post<any>("/ai/transcribe", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
 

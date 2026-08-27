@@ -107,8 +107,12 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState<string | null>(null);
+  const [liveSpeechText, setLiveSpeechText] = useState<string>("");
+  const [englishTranslation, setEnglishTranslation] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recognitionRef = useRef<any>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
 
@@ -162,10 +166,14 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
   // Voice Recording handler via Web MediaRecorder & Sarvam STT
   const startRecording = async () => {
     setError(null);
+    setLiveSpeechText("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -174,7 +182,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
       };
 
       recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         stream.getTracks().forEach((track) => track.stop());
         await processAudioForTranscription(audioBlob);
       };
@@ -183,6 +191,28 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
       recorder.start();
       setIsRecording(true);
       setRecordingSeconds(0);
+
+      // Start Browser Speech Recognition in parallel
+      if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+        try {
+          const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+          const rec = new SpeechRec();
+          rec.continuous = true;
+          rec.interimResults = true;
+          rec.lang = selectedLanguage === "hi" ? "hi-IN" : selectedLanguage === "mr" ? "mr-IN" : "en-IN";
+          rec.onresult = (event: any) => {
+            let transcript = "";
+            for (let i = 0; i < event.results.length; i++) {
+              transcript += event.results[i][0].transcript + " ";
+            }
+            if (transcript.trim()) {
+              setLiveSpeechText(transcript.trim());
+            }
+          };
+          recognitionRef.current = rec;
+          rec.start();
+        } catch {}
+      }
 
       timerIntervalRef.current = setInterval(() => {
         setRecordingSeconds((prev) => prev + 1);
@@ -199,6 +229,11 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
       setIsRecording(false);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
   };
 
   const processAudioForTranscription = async (blob: Blob) => {
@@ -206,18 +241,31 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
     const toastId = toast.loading("Transcribing voice input via Sarvam AI...");
     try {
       const audioFormData = new FormData();
-      audioFormData.append("file", blob, "recording.wav");
-      audioFormData.append("language", selectedLanguage);
+      audioFormData.append("file", blob, "recording.webm");
+      audioFormData.append(
+        "language",
+        selectedLanguage === "hi" ? "hi-IN" : selectedLanguage === "mr" ? "mr-IN" : "en-IN"
+      );
 
-      const res = await aiAPI.transcribe(audioFormData);
+      let text = "";
+      try {
+        const res = await aiAPI.transcribe(audioFormData);
+        if (res.data?.transcript && res.data.transcript.trim()) {
+          text = res.data.transcript.trim();
+        }
+      } catch {}
+
+      // If backend transcription is empty, use browser live speech recognition text
+      if (!text && liveSpeechText.trim()) {
+        text = liveSpeechText.trim();
+      }
+
       toast.dismiss(toastId);
 
-      if (res.data?.transcript) {
-        const text = res.data.transcript;
+      if (text) {
         setVoiceTranscript(text);
         toast.success("Voice transcript ready for review!");
 
-        // If title is empty, use first few words, and description with full transcript
         if (!form.title.trim()) {
           const titleSnippet = text.slice(0, 70);
           setForm((prev) => ({
@@ -232,13 +280,39 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
           }));
         }
       } else {
-        toast.error("Could not transcribe speech. Please type your complaint.");
+        toast.error("Could not capture speech audio. Please type your complaint.");
       }
     } catch (err) {
       toast.dismiss(toastId);
       toast.error("Speech transcription failed. Please type manually.");
     } finally {
       setIsTranscribing(false);
+    }
+  };
+
+  const handleTranslateDescription = async () => {
+    const textToTranslate = form.description || form.title;
+    if (!textToTranslate.trim()) return;
+
+    setIsTranslating(true);
+    const toastId = toast.loading("Translating via Sarvam AI Mayura...");
+    try {
+      const res = await aiAPI.translate({
+        text: textToTranslate,
+        sourceLanguage: selectedLanguage === "hi" ? "hi-IN" : selectedLanguage === "mr" ? "mr-IN" : "en-IN",
+        targetLanguage: "en-IN",
+      });
+      toast.dismiss(toastId);
+
+      if (res.data?.translatedText) {
+        setEnglishTranslation(res.data.translatedText);
+        toast.success("Translation complete!");
+      }
+    } catch {
+      toast.dismiss(toastId);
+      toast.error("Translation service unavailable.");
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -683,7 +757,44 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
               maxLength={2000}
               className="min-h-28 border-stone-300"
             />
-            <span className="text-[11px] text-slate-400 mt-1 block">{form.description.length}/2000</span>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[11px] text-slate-400">{form.description.length}/2000</span>
+              {selectedLanguage !== "en" && form.description.trim().length > 0 && (
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  onClick={handleTranslateDescription}
+                  disabled={isTranslating}
+                  className="text-[11px] font-bold text-[#D95D0F] border-orange-300 hover:bg-orange-50 gap-1.5"
+                >
+                  {isTranslating ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3 text-orange-500" />
+                  )}
+                  Translate to English (Sarvam AI)
+                </Button>
+              )}
+            </div>
+
+            {/* Translation Result Card */}
+            {englishTranslation && (
+              <div className="mt-2.5 p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs space-y-1">
+                <div className="flex items-center justify-between text-emerald-900 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3.5 text-emerald-600" />
+                    English Translation (Municipal Normalized)
+                  </span>
+                  <Badge className="bg-emerald-600 text-white text-[9px] px-1.5 py-0 font-mono">
+                    Sarvam Mayura:v1
+                  </Badge>
+                </div>
+                <p className="text-slate-700 leading-relaxed font-medium italic">
+                  "{englishTranslation}"
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Feature 5: AI Assistant Suggestion Box */}
