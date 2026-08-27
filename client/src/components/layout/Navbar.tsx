@@ -49,14 +49,14 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home", icon: null },
-    { href: "/map", label: t("live_map"), icon: Map },
-    { href: "/complaints", label: t("my_complaints"), icon: FileText },
-    { href: "/contractors", label: t("contractors"), icon: HardHat },
-    { href: "/analytics", label: t("analytics"), icon: BarChart3 },
+    { href: "/map", label: "Live Map", icon: Map },
+    { href: "/complaints", label: "Complaints Feed", icon: FileText },
+    { href: "/contractors", label: "Contractors", icon: HardHat },
+    { href: "/analytics", label: "Analytics", icon: BarChart3 },
     ...(isSignedIn
       ? [
-          { href: "/citizen/rti", label: t("rti_generator"), icon: Scale },
-          { href: dashboardHref, label: t("dashboard"), icon: null },
+          { href: "/citizen/rti", label: "RTI Generator", icon: Scale },
+          { href: dashboardHref, label: "Dashboard", icon: null },
           { href: "/profile", label: "Profile", icon: User },
         ]
       : []),
@@ -91,8 +91,8 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-all hover:bg-black/5"
-              style={{ color: "#4B5563" }}
+              className="rounded-xl px-3.5 py-2 text-xs font-bold tracking-wide transition-all hover:bg-stone-100 hover:text-slate-900"
+              style={{ color: "#374151" }}
             >
               {link.label}
             </Link>

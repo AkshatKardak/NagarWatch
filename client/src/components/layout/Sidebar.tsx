@@ -47,7 +47,7 @@ const linksByRole: Record<UserRole, SidebarLink[]> = {
     { href: "/admin/users", label: "User Roles", icon: Users },
     { href: "/admin/wards", label: "Ward Zones", icon: Map },
     { href: "/admin/contractors", label: "Contractors Audit", icon: HardHat },
-    { href: "/authority/analytics", label: "City Analytics", icon: BarChart3 },
+    { href: "/admin/analytics", label: "City Analytics", icon: BarChart3 },
     { href: "/citizen/rti", label: "RTI Generator", icon: Scale },
     { href: "/profile", label: "My Profile", icon: User },
   ],
