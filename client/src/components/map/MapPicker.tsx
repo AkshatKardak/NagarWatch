@@ -13,10 +13,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// CartoDB Voyager — fast, crisp, reliable tiles with full street names and landmark details
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+// OpenStreetMap standard tile layer (100% free, no API key required, zero watermark)
+const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors';
 
 /** High-contrast orange SVG teardrop pin */
 const PICK_ICON = L.divIcon({
@@ -122,7 +122,7 @@ export default function MapPicker({
           url={TILE_URL}
           attribution={TILE_ATTRIBUTION}
           maxZoom={19}
-          subdomains={["a", "b", "c", "d"]}
+          subdomains={["a", "b", "c"]}
         />
         <PickerEvents onPick={handlePick} />
 

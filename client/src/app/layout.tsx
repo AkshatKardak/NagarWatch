@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { SocketProvider } from "@/components/providers/SocketProvider";
-import { ToasterProvider } from "@/components/providers/ToasterProvider";
+import AppProviders from "@/components/providers/AppProviders";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -56,10 +56,10 @@ export default function RootLayout({
         <body className={`${inter.className} min-h-screen bg-background text-foreground`}>
           <QueryProvider>
             <SocketProvider>
-              <ToasterProvider>
+              <AppProviders>
                 {children}
                 <Toaster richColors position="top-right" />
-              </ToasterProvider>
+              </AppProviders>
             </SocketProvider>
           </QueryProvider>
         </body>

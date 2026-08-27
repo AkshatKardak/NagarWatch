@@ -4,12 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/userStore";
-import { LogOut, User, Crown, Shield, Users, ChevronDown } from "lucide-react";
+import { LogOut, User, Crown, Shield, Users, HardHat, ChevronDown } from "lucide-react";
 
 const ROLE_META = {
-  citizen:   { label: "Citizen",   color: "#2563eb", Icon: Users  },
-  authority: { label: "Authority", color: "#10b981", Icon: Shield },
-  admin:     { label: "Admin",     color: "#f59e0b", Icon: Crown  },
+  citizen:   { label: "Citizen",   color: "#D95D0F", Icon: Users   },
+  authority: { label: "Authority", color: "#10B981", Icon: Shield  },
+  contractor:{ label: "Contractor",color: "#3B82F6", Icon: HardHat },
+  admin:     { label: "Admin",     color: "#F59E0B", Icon: Crown   },
 } as const;
 
 type Role = keyof typeof ROLE_META;
@@ -22,14 +23,11 @@ export function NavbarUserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const role = ((user?.publicMetadata?.role as string) ?? appUser?.role ?? "citizen") as Role;
+  const role = ((user?.publicMetadata?.role as string) ?? appUser?.role ?? (typeof window !== "undefined" ? localStorage.getItem("nagarwatch_selected_role") : null) ?? "citizen") as Role;
   const meta = ROLE_META[role] ?? ROLE_META.citizen;
   const { Icon } = meta;
 
-  const profileHref =
-    role === "admin" ? "/admin/profile" :
-    role === "authority" ? "/authority/profile" :
-    "/citizen/profile";
+  const profileHref = "/profile";
 
   // Close on outside click
   useEffect(() => {

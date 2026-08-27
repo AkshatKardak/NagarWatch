@@ -7,6 +7,7 @@ import { useAuthToken } from "@/hooks/useAuthToken"
 import { useSocket } from "@/hooks/useSocket"
 import { setAuthToken, usersAPI } from "@/lib/api"
 import { ToasterProvider } from "@/components/providers/ToasterProvider"
+import { OAuthRoleModal } from "@/components/auth/OAuthRoleModal"
 import "@/lib/i18n"
 
 interface AppProvidersProps {
@@ -54,6 +55,7 @@ export default function AppProviders({ children }: AppProvidersProps) {
   return (
     <ToasterProvider>
       {children}
+      <OAuthRoleModal />
     </ToasterProvider>
   )
 }
