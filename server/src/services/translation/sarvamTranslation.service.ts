@@ -8,15 +8,58 @@ export interface TranslationResult {
 }
 
 const LANGUAGE_CODE_MAP: Record<string, string> = {
+  // Hindi & English
   hi: "hi-IN",
-  "hi-IN": "hi-IN",
+  "hi-in": "hi-IN",
   hindi: "hi-IN",
-  mr: "mr-IN",
-  "mr-IN": "mr-IN",
-  marathi: "mr-IN",
   en: "en-IN",
-  "en-IN": "en-IN",
+  "en-in": "en-IN",
   english: "en-IN",
+
+  // Western & Central India
+  mr: "mr-IN",
+  "mr-in": "mr-IN",
+  marathi: "mr-IN",
+  gu: "gu-IN",
+  "gu-in": "gu-IN",
+  gujarati: "gu-IN",
+
+  // Southern India
+  ta: "ta-IN",
+  "ta-in": "ta-IN",
+  tamil: "ta-IN",
+  te: "te-IN",
+  "te-in": "te-IN",
+  telugu: "te-IN",
+  kn: "kn-IN",
+  "kn-in": "kn-IN",
+  kannada: "kn-IN",
+  ml: "ml-IN",
+  "ml-in": "ml-IN",
+  malayalam: "ml-IN",
+
+  // Eastern & North-Eastern India
+  bn: "bn-IN",
+  "bn-in": "bn-IN",
+  bengali: "bn-IN",
+  bangla: "bn-IN",
+  od: "od-IN",
+  "od-in": "od-IN",
+  or: "od-IN",
+  "or-in": "od-IN",
+  odia: "od-IN",
+  oriya: "od-IN",
+  as: "as-IN",
+  "as-in": "as-IN",
+  assamese: "as-IN",
+
+  // Northern India
+  pa: "pa-IN",
+  "pa-in": "pa-IN",
+  punjabi: "pa-IN",
+  ur: "ur-IN",
+  "ur-in": "ur-IN",
+  urdu: "ur-IN",
 };
 
 /**

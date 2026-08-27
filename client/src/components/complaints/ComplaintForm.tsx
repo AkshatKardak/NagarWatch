@@ -17,9 +17,15 @@ import {
   MicOff,
   Volume2,
   Languages,
+  Search,
+  Filter,
+  Globe,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +45,31 @@ import {
 } from "@/lib/what3words";
 
 const MapPicker = dynamic(() => import("@/components/map/MapPicker"), { ssr: false });
+
+export interface IndianLanguage {
+  code: string;
+  key: string;
+  label: string;
+  native: string;
+  state: string;
+  zone: "All" | "South" | "North" | "West" | "East" | "Pan-India";
+}
+
+export const INDIAN_STATE_LANGUAGES: IndianLanguage[] = [
+  { code: "en-IN", key: "en", label: "English", native: "English", state: "Pan-India Official", zone: "Pan-India" },
+  { code: "hi-IN", key: "hi", label: "Hindi", native: "हिन्दी", state: "North & Central India", zone: "North" },
+  { code: "mr-IN", key: "mr", label: "Marathi", native: "मराठी", state: "Maharashtra", zone: "West" },
+  { code: "ta-IN", key: "ta", label: "Tamil", native: "தமிழ்", state: "Tamil Nadu & Puducherry", zone: "South" },
+  { code: "te-IN", key: "te", label: "Telugu", native: "తెలుగు", state: "Andhra Pradesh & Telangana", zone: "South" },
+  { code: "kn-IN", key: "kn", label: "Kannada", native: "ಕನ್ನಡ", state: "Karnataka", zone: "South" },
+  { code: "bn-IN", key: "bn", label: "Bengali", native: "বাংলা", state: "West Bengal & Tripura", zone: "East" },
+  { code: "gu-IN", key: "gu", label: "Gujarati", native: "ગુજરાતી", state: "Gujarat", zone: "West" },
+  { code: "ml-IN", key: "ml", label: "Malayalam", native: "മലയാളം", state: "Kerala & Lakshadweep", zone: "South" },
+  { code: "pa-IN", key: "pa", label: "Punjabi", native: "ਪੰਜਾਬੀ", state: "Punjab & Chandigarh", zone: "North" },
+  { code: "od-IN", key: "od", label: "Odia", native: "ଓଡ଼ିଆ", state: "Odisha", zone: "East" },
+  { code: "as-IN", key: "as", label: "Assamese", native: "অসমীয়া", state: "Assam & North East", zone: "East" },
+  { code: "ur-IN", key: "ur", label: "Urdu", native: "اردو", state: "Pan-India", zone: "Pan-India" },
+];
 
 const categories: ComplaintCategory[] = [
   "pothole",
@@ -77,13 +108,35 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   }
 }
 
-import { useRouter } from "next/navigation";
-
 export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplaint) => void }) {
   const router = useRouter();
   const { t } = useTranslation(["complaints", "common"]);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [selectedLanguage, setSelectedLanguage] = useState<"en" | "hi" | "mr">("en");
+
+  // Indian State Languages State
+  const [selectedLangCode, setSelectedLangCode] = useState<string>("en-IN");
+  const [showAllLanguages, setShowAllLanguages] = useState<boolean>(false);
+  const [langSearch, setLangSearch] = useState<string>("");
+  const [selectedZone, setSelectedZone] = useState<string>("All");
+
+  const activeLang = useMemo(() => {
+    return (
+      INDIAN_STATE_LANGUAGES.find((l) => l.code === selectedLangCode || l.key === selectedLangCode) ||
+      INDIAN_STATE_LANGUAGES[0]
+    );
+  }, [selectedLangCode]);
+
+  const filteredLanguages = useMemo(() => {
+    return INDIAN_STATE_LANGUAGES.filter((l) => {
+      const matchesZone = selectedZone === "All" || l.zone === selectedZone || l.zone === "Pan-India";
+      const matchesQuery =
+        langSearch.trim() === "" ||
+        l.label.toLowerCase().includes(langSearch.toLowerCase()) ||
+        l.native.toLowerCase().includes(langSearch.toLowerCase()) ||
+        l.state.toLowerCase().includes(langSearch.toLowerCase());
+      return matchesZone && matchesQuery;
+    });
+  }, [selectedZone, langSearch]);
 
   const [form, setForm] = useState<FormState>({
     title: "",
@@ -195,14 +248,14 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
       setIsRecording(true);
       setRecordingSeconds(0);
 
-      // Start Browser Speech Recognition in parallel
+      // Start Browser Speech Recognition in parallel for selected Indian state language
       if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
         try {
           const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
           const rec = new SpeechRec();
           rec.continuous = true;
           rec.interimResults = true;
-          rec.lang = selectedLanguage === "hi" ? "hi-IN" : selectedLanguage === "mr" ? "mr-IN" : "en-IN";
+          rec.lang = activeLang.code;
           rec.onresult = (event: any) => {
             let transcript = "";
             for (let i = 0; i < event.results.length; i++) {
@@ -241,14 +294,11 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
 
   const processAudioForTranscription = async (blob: Blob) => {
     setIsTranscribing(true);
-    const toastId = toast.loading("Transcribing voice input via Sarvam AI...");
+    const toastId = toast.loading(`Transcribing ${activeLang.label} audio via Sarvam AI Saaras...`);
     try {
       const audioFormData = new FormData();
       audioFormData.append("file", blob, "recording.webm");
-      audioFormData.append(
-        "language",
-        selectedLanguage === "hi" ? "hi-IN" : selectedLanguage === "mr" ? "mr-IN" : "en-IN"
-      );
+      audioFormData.append("language", activeLang.code);
 
       let text = "";
       try {
@@ -267,7 +317,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
 
       if (text) {
         setVoiceTranscript(text);
-        toast.success("Voice transcript ready for review!");
+        toast.success(`Voice transcript ready in ${activeLang.native}!`);
 
         if (!form.title.trim()) {
           const titleSnippet = text.slice(0, 70);
@@ -298,11 +348,11 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
     if (!textToTranslate.trim()) return;
 
     setIsTranslating(true);
-    const toastId = toast.loading("Translating via Sarvam AI Mayura...");
+    const toastId = toast.loading(`Translating ${activeLang.label} to English via Sarvam AI Mayura...`);
     try {
       const res = await aiAPI.translate({
         text: textToTranslate,
-        sourceLanguage: selectedLanguage === "hi" ? "hi-IN" : selectedLanguage === "mr" ? "mr-IN" : "en-IN",
+        sourceLanguage: activeLang.code,
         targetLanguage: "en-IN",
       });
       toast.dismiss(toastId);
@@ -376,7 +426,8 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
     data.append("title", form.title);
     data.append("description", form.description);
     data.append("category", form.category);
-    data.append("language", selectedLanguage);
+    data.append("language", activeLang.key);
+    data.append("languageCode", activeLang.code);
     if (form.lat !== null) data.append("lat", String(form.lat));
     if (form.lng !== null) data.append("lng", String(form.lng));
     data.append("address", form.address);
@@ -388,7 +439,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
       data.append("voiceTranscript", voiceTranscript);
     }
     return data;
-  }, [form, selectedLanguage, voiceTranscript]);
+  }, [form, activeLang, voiceTranscript]);
 
   // Handle Photo & Gemini Vision Categorization
   const handleImage = async (file: File | null) => {
@@ -527,7 +578,8 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
       forceData.append("title", form.title);
       forceData.append("description", form.description);
       forceData.append("category", form.category);
-      forceData.append("language", selectedLanguage);
+      forceData.append("language", activeLang.key);
+      forceData.append("languageCode", activeLang.code);
       forceData.append("lat", String(form.lat || ""));
       forceData.append("lng", String(form.lng || ""));
       forceData.append("address", form.address);
@@ -647,44 +699,161 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
 
       {/* ── Step 1 : Details & Multilingual Input ── */}
       {step === 1 && (
-        <div className="space-y-4">
-          {/* Feature 6: Language Selection */}
-          <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-200">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-              <Languages className="size-4 text-[#D95D0F]" />
-              <span>Complaint Language:</span>
+        <div className="space-y-5">
+          {/* Feature 6: Indian State Languages Filter & Selection Hub */}
+          <div className="rounded-2xl border border-orange-200/90 bg-gradient-to-br from-stone-50 via-orange-50/25 to-stone-50 p-4 sm:p-5 space-y-4 shadow-xs">
+            {/* Header & Active State Badge */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-orange-100 text-[#D95D0F] flex items-center justify-center shadow-xs shrink-0">
+                  <Languages className="size-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                    <span>Indian State Language Detection</span>
+                    <span className="text-[10px] text-orange-600 font-bold bg-orange-100 px-2 py-0.5 rounded-full">
+                      13+ Official Languages
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Voice &amp; text in your mother tongue · Auto-translated to English via Sarvam AI Mayura
+                  </p>
+                </div>
+              </div>
+
+              {/* Active Badge */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto bg-white px-3 py-1.5 rounded-xl border border-orange-200 shadow-xs">
+                <span className="text-[11px] font-bold text-slate-500">Selected:</span>
+                <span className="text-xs font-black text-[#D95D0F]">
+                  {activeLang.native} ({activeLang.label})
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">· {activeLang.state}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              {[
-                { code: "en", label: "English" },
-                { code: "hi", label: "हिन्दी" },
-                { code: "mr", label: "मराठी" },
-              ].map((lang) => (
+
+            {/* Quick Access Popular State Languages Row */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  Quick Select Languages:
+                </span>
                 <button
-                  key={lang.code}
                   type="button"
-                  onClick={() => setSelectedLanguage(lang.code as any)}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                    selectedLanguage === lang.code
-                      ? "bg-[#D95D0F] text-white shadow-sm"
-                      : "bg-white text-slate-700 border border-stone-300 hover:bg-stone-100"
-                  }`}
+                  onClick={() => setShowAllLanguages((prev) => !prev)}
+                  className="text-[11px] font-bold text-[#D95D0F] hover:underline flex items-center gap-1"
                 >
-                  {lang.label}
+                  <Filter className="size-3" />
+                  {showAllLanguages ? "Collapse Filter View" : "Search All State Languages ▾"}
                 </button>
-              ))}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {INDIAN_STATE_LANGUAGES.slice(0, 7).map((lang) => {
+                  const isSelected = activeLang.code === lang.code;
+                  return (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setSelectedLangCode(lang.code)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-xl font-bold transition-all ${
+                        isSelected
+                          ? "bg-[#D95D0F] text-white shadow-sm ring-2 ring-orange-300"
+                          : "bg-white text-slate-700 border border-stone-200 hover:bg-stone-100 shadow-xs"
+                      }`}
+                    >
+                      <span className="text-xs">{lang.native}</span>
+                      <span className="text-[10px] opacity-75">({lang.label})</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Expandable Searchable Filter Grid for All Indian State Languages */}
+            {showAllLanguages && (
+              <div className="p-3.5 bg-white rounded-2xl border border-stone-200 shadow-xs space-y-3 animate-in fade-in zoom-in-95 duration-150">
+                {/* Search & Zone Filter Toolbar */}
+                <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search state language e.g. Tamil, Punjabi, Odia, Gujarati, Malayalam..."
+                      value={langSearch}
+                      onChange={(e) => setLangSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs rounded-lg border-stone-300 bg-stone-50"
+                    />
+                  </div>
+
+                  {/* Zone Filter Chips */}
+                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                    {["All", "South", "North", "West", "East"].map((zone) => (
+                      <button
+                        key={zone}
+                        type="button"
+                        onClick={() => setSelectedZone(zone)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                          selectedZone === zone
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "bg-stone-100 text-slate-600 hover:bg-stone-200"
+                        }`}
+                      >
+                        {zone}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Grid of Indian Languages */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
+                  {filteredLanguages.map((lang) => {
+                    const isSelected = activeLang.code === lang.code;
+                    return (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLangCode(lang.code);
+                        }}
+                        className={`text-left p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? "bg-orange-50/90 border-[#D95D0F] shadow-xs"
+                            : "bg-stone-50/70 border-stone-200/80 hover:bg-stone-100"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-black text-slate-900">{lang.native}</span>
+                          {isSelected && <CheckCircle2 className="size-3.5 text-[#D95D0F]" />}
+                        </div>
+                        <div className="mt-1">
+                          <span className="text-xs font-bold text-slate-800 block">{lang.label}</span>
+                          <span className="text-[10px] text-slate-400 font-medium truncate block">{lang.state}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Feature 7: Voice Speech-to-Text Input Section */}
-          <div className="p-3.5 bg-gradient-to-r from-orange-50/60 to-amber-50/60 rounded-xl border border-orange-200">
-            <div className="flex items-center justify-between">
+          <div className="p-4 bg-gradient-to-br from-orange-50/70 via-amber-50/50 to-orange-50/30 rounded-2xl border border-orange-200 space-y-2.5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Volume2 className="size-4 text-[#D95D0F]" />
-                <span className="text-xs font-bold text-slate-800">
-                  Voice Complaint Submission (Sarvam AI)
-                </span>
+                <div className="w-8 h-8 rounded-xl bg-orange-100 text-[#D95D0F] flex items-center justify-center shrink-0">
+                  <Volume2 className="size-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-black text-slate-900 block">
+                    Voice Complaint Recording (Sarvam AI Saaras STT)
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    Recording in: <strong className="text-slate-800">{activeLang.native} ({activeLang.label})</strong>
+                  </span>
+                </div>
               </div>
+
               {!isRecording ? (
                 <Button
                   type="button"
@@ -692,35 +861,43 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                   variant="outline"
                   onClick={startRecording}
                   disabled={isTranscribing}
-                  className="text-xs font-bold border-[#D95D0F] text-[#D95D0F] hover:bg-orange-50 h-8"
+                  className="text-xs font-black border-[#D95D0F] text-[#D95D0F] hover:bg-orange-500 hover:text-white transition-all shadow-xs h-9 px-4 rounded-xl"
                 >
-                  <Mic className="size-3.5 mr-1" />
-                  Speak in {selectedLanguage === "hi" ? "Hindi" : selectedLanguage === "mr" ? "Marathi" : "English"}
+                  <Mic className="size-3.5 mr-1.5 animate-pulse" />
+                  Speak in {activeLang.native} ({activeLang.label})
                 </Button>
               ) : (
                 <Button
                   type="button"
                   size="sm"
                   onClick={stopRecording}
-                  className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white animate-pulse h-8"
+                  className="text-xs font-black bg-red-600 hover:bg-red-700 text-white animate-pulse h-9 px-4 rounded-xl shadow-md"
                 >
-                  <MicOff className="size-3.5 mr-1" />
+                  <MicOff className="size-3.5 mr-1.5" />
                   Stop Recording ({recordingSeconds}s)
                 </Button>
               )}
             </div>
 
             {isTranscribing && (
-              <div className="flex items-center gap-2 text-xs font-medium text-[#D95D0F] mt-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#D95D0F] pt-1">
                 <Loader2 className="size-3.5 animate-spin" />
-                <span>Processing speech and translating via Sarvam AI Mayura...</span>
+                <span>Transcribing {activeLang.label} audio with Sarvam AI Saaras speech model...</span>
               </div>
             )}
 
             {voiceTranscript && (
-              <div className="mt-2 p-2 bg-white rounded-lg border border-orange-200 text-xs text-slate-700">
-                <span className="font-bold text-slate-900 block mb-0.5">Recorded Transcript:</span>
-                "{voiceTranscript}"
+              <div className="mt-2 p-3 bg-white rounded-xl border border-orange-200 text-xs text-slate-700 space-y-1 shadow-xs">
+                <div className="flex items-center justify-between text-slate-900 font-bold">
+                  <span className="flex items-center gap-1.5 text-[#D95D0F]">
+                    <CheckCircle2 className="size-3.5" />
+                    Recorded Transcript in {activeLang.native} ({activeLang.label}):
+                  </span>
+                  <Badge className="bg-orange-100 text-[#D95D0F] border-orange-200 text-[9px] font-mono">
+                    Sarvam Saaras STT
+                  </Badge>
+                </div>
+                <p className="italic text-slate-800 font-medium">"{voiceTranscript}"</p>
               </div>
             )}
           </div>
@@ -733,9 +910,9 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
               value={form.title}
               onChange={(e) => setForm((cur) => ({ ...cur, title: e.target.value }))}
               onBlur={fetchAiAssist}
-              placeholder="e.g., Deep pothole on road near Metro Gate 2"
+              placeholder={`e.g., Issue title in ${activeLang.label} or English...`}
               maxLength={200}
-              className="border-stone-300"
+              className="border-stone-300 rounded-xl"
             />
           </div>
 
@@ -746,7 +923,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
             <select
               value={form.category}
               onChange={(e) => setForm((cur) => ({ ...cur, category: e.target.value as ComplaintCategory }))}
-              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm font-medium focus:border-orange-500 focus:outline-none"
+              className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-orange-500 focus:outline-none shadow-xs"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -764,44 +941,44 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
               value={form.description}
               onChange={(e) => setForm((cur) => ({ ...cur, description: e.target.value }))}
               onBlur={fetchAiAssist}
-              placeholder="Describe the civic issue, approximate dimensions, traffic safety hazard, or history..."
+              placeholder={`Describe the civic grievance in ${activeLang.label} (${activeLang.native}) or English...`}
               maxLength={2000}
-              className="min-h-28 border-stone-300"
+              className="min-h-28 border-stone-300 rounded-xl"
             />
-            <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center justify-between mt-1.5">
               <span className="text-[11px] text-slate-400">{form.description.length}/2000</span>
-              {selectedLanguage !== "en" && form.description.trim().length > 0 && (
+              {activeLang.key !== "en" && form.description.trim().length > 0 && (
                 <Button
                   type="button"
                   size="xs"
                   variant="outline"
                   onClick={handleTranslateDescription}
                   disabled={isTranslating}
-                  className="text-[11px] font-bold text-[#D95D0F] border-orange-300 hover:bg-orange-50 gap-1.5"
+                  className="text-[11px] font-bold text-[#D95D0F] border-orange-300 hover:bg-orange-50 gap-1.5 rounded-lg"
                 >
                   {isTranslating ? (
                     <Loader2 className="size-3 animate-spin" />
                   ) : (
                     <Sparkles className="size-3 text-orange-500" />
                   )}
-                  Translate to English (Sarvam AI)
+                  Translate {activeLang.label} to English (Sarvam AI)
                 </Button>
               )}
             </div>
 
             {/* Translation Result Card */}
             {englishTranslation && (
-              <div className="mt-2.5 p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs space-y-1">
+              <div className="mt-2.5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1.5 shadow-xs">
                 <div className="flex items-center justify-between text-emerald-900 font-bold">
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 className="size-3.5 text-emerald-600" />
-                    English Translation (Municipal Normalized)
+                    English Translation (Municipal Normalized for Ward Triage)
                   </span>
                   <Badge className="bg-emerald-600 text-white text-[9px] px-1.5 py-0 font-mono">
                     Sarvam Mayura:v1
                   </Badge>
                 </div>
-                <p className="text-slate-700 leading-relaxed font-medium italic">
+                <p className="text-slate-800 leading-relaxed font-medium italic">
                   "{englishTranslation}"
                 </p>
               </div>
