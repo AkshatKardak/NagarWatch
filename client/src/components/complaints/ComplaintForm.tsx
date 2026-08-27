@@ -77,7 +77,10 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   }
 }
 
-export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint) => void }) {
+import { useRouter } from "next/navigation";
+
+export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplaint) => void }) {
+  const router = useRouter();
   const { t } = useTranslation(["complaints", "common"]);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedLanguage, setSelectedLanguage] = useState<"en" | "hi" | "mr">("en");
@@ -500,7 +503,11 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
       const complaint = await submitComplaint(formData);
       toast.dismiss(toastId);
       toast.success(`${t("success_msg", "Complaint registered successfully!")} #${complaint._id.slice(-6)}`);
-      onSuccess(complaint);
+      if (onSuccess) {
+        onSuccess(complaint);
+      } else {
+        router.push(`/complaints/${complaint._id}`);
+      }
     } catch (submitError: any) {
       toast.dismiss(toastId);
       const msg = submitError instanceof Error ? submitError.message : t("error_msg", "Submission failed");
@@ -533,7 +540,11 @@ export function ComplaintForm({ onSuccess }: { onSuccess: (complaint: IComplaint
       const complaint = await submitComplaint(forceData);
       toast.dismiss(toastId);
       toast.success(`${t("success_msg", "Complaint registered successfully!")} #${complaint._id.slice(-6)}`);
-      onSuccess(complaint);
+      if (onSuccess) {
+        onSuccess(complaint);
+      } else {
+        router.push(`/complaints/${complaint._id}`);
+      }
     } catch (submitError: any) {
       toast.dismiss(toastId);
       const msg = submitError instanceof Error ? submitError.message : t("error_msg", "Submission failed");
