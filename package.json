@@ -4,13 +4,24 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-  "dev:server": "npm run dev --prefix server",
-  "dev:client": "npm run dev --prefix client"
-},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+    "build": "npm install --prefix server && npm run build --prefix server",
+    "start": "npm start --prefix server",
+    "build:server": "npm install --prefix server && npm run build --prefix server",
+    "start:server": "npm start --prefix server",
+    "build:client": "npm install --prefix client && npm run build --prefix client",
+    "start:client": "npm start --prefix client",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "postinstall": "npm install --prefix server && npm install --prefix client"
+  },
+  "keywords": [
+    "nagarwatch",
+    "civic-governance",
+    "india"
+  ],
+  "author": "Akshat Kardak",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "concurrently": "^10.0.3"
