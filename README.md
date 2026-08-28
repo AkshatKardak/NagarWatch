@@ -4,8 +4,15 @@
   <img src="client/public/Navbar.png" alt="NagarWatch Platform Banner" width="100%" />
 </p>
 
+<p align="center">
+  <a href="https://nagarwatch.netlify.app/" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.shields.io/badge/🚀_Live_Website-nagarwatch.netlify.app-D95D0F?style=for-the-badge&logo=netlify&logoColor=white" alt="Live Demo" />
+  </a>
+</p>
+
 > **NagarWatch** is an enterprise-grade, real-time civic issue reporting, tracking, and governance platform engineered specifically for Indian municipalities. It directly bridges citizens, municipal ward authorities, and Central Public Works Department (CPWD) contractors to enforce strict Citizens' Charter SLAs, verified repairs, and complete legal accountability.
 
+[![Live Platform](https://img.shields.io/badge/Live_URL-nagarwatch.netlify.app-D95D0F?logo=netlify&logoColor=white)](https://nagarwatch.netlify.app/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://typescriptlang.org)
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev)
