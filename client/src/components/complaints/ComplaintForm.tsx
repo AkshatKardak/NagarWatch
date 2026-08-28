@@ -71,6 +71,14 @@ export const INDIAN_STATE_LANGUAGES: IndianLanguage[] = [
   { code: "ur-IN", key: "ur", label: "Urdu", native: "اردو", state: "Pan-India", zone: "Pan-India" },
 ];
 
+export function formatLanguageDisplayName(lang: IndianLanguage): string {
+  if (!lang) return "English";
+  if (lang.native === lang.label || lang.key === "en") {
+    return lang.label;
+  }
+  return `${lang.native} (${lang.label})`;
+}
+
 const categories: ComplaintCategory[] = [
   "pothole",
   "garbage",
@@ -294,7 +302,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
 
   const processAudioForTranscription = async (blob: Blob) => {
     setIsTranscribing(true);
-    const toastId = toast.loading(`Transcribing ${activeLang.label} audio via Sarvam AI Saaras...`);
+    const toastId = toast.loading("Transcribing voice audio...");
     try {
       const audioFormData = new FormData();
       audioFormData.append("file", blob, "recording.webm");
@@ -317,7 +325,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
 
       if (text) {
         setVoiceTranscript(text);
-        toast.success(`Voice transcript ready in ${activeLang.native}!`);
+        toast.success(`Voice transcript ready in ${formatLanguageDisplayName(activeLang)}!`);
 
         if (!form.title.trim()) {
           const titleSnippet = text.slice(0, 70);
@@ -348,7 +356,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
     if (!textToTranslate.trim()) return;
 
     setIsTranslating(true);
-    const toastId = toast.loading(`Translating ${activeLang.label} to English via Sarvam AI Mayura...`);
+    const toastId = toast.loading("Translating grievance to English...");
     try {
       const res = await aiAPI.translate({
         text: textToTranslate,
@@ -716,7 +724,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                     </span>
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    Voice &amp; text in your mother tongue · Auto-translated to English via Sarvam AI Mayura
+                    Voice &amp; text in your mother tongue · Automatically translated to English for ward officers
                   </p>
                 </div>
               </div>
@@ -725,7 +733,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
               <div className="flex items-center gap-1.5 self-start sm:self-auto bg-white px-3 py-1.5 rounded-xl border border-orange-200 shadow-xs">
                 <span className="text-[11px] font-bold text-slate-500">Selected:</span>
                 <span className="text-xs font-black text-[#D95D0F]">
-                  {activeLang.native} ({activeLang.label})
+                  {formatLanguageDisplayName(activeLang)}
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium">· {activeLang.state}</span>
               </div>
@@ -761,8 +769,14 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                           : "bg-white text-slate-700 border border-stone-200 hover:bg-stone-100 shadow-xs"
                       }`}
                     >
-                      <span className="text-xs">{lang.native}</span>
-                      <span className="text-[10px] opacity-75">({lang.label})</span>
+                      {lang.native === lang.label ? (
+                        <span>{lang.label}</span>
+                      ) : (
+                        <>
+                          <span className="text-xs">{lang.native}</span>
+                          <span className="text-[10px] opacity-75">({lang.label})</span>
+                        </>
+                      )}
                     </button>
                   );
                 })}
@@ -846,10 +860,10 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                 </div>
                 <div>
                   <span className="text-xs font-black text-slate-900 block">
-                    Voice Complaint Recording (Sarvam AI Saaras STT)
+                    Voice Complaint Recording (Speech-to-Text)
                   </span>
                   <span className="text-[11px] text-slate-500">
-                    Recording in: <strong className="text-slate-800">{activeLang.native} ({activeLang.label})</strong>
+                    Recording in: <strong className="text-slate-800">{formatLanguageDisplayName(activeLang)}</strong>
                   </span>
                 </div>
               </div>
@@ -864,7 +878,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                   className="text-xs font-black border-[#D95D0F] text-[#D95D0F] hover:bg-orange-500 hover:text-white transition-all shadow-xs h-9 px-4 rounded-xl"
                 >
                   <Mic className="size-3.5 mr-1.5 animate-pulse" />
-                  Speak in {activeLang.native} ({activeLang.label})
+                  Speak in {formatLanguageDisplayName(activeLang)}
                 </Button>
               ) : (
                 <Button
@@ -882,7 +896,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
             {isTranscribing && (
               <div className="flex items-center gap-2 text-xs font-bold text-[#D95D0F] pt-1">
                 <Loader2 className="size-3.5 animate-spin" />
-                <span>Transcribing {activeLang.label} audio with Sarvam AI Saaras speech model...</span>
+                <span>Transcribing audio into text...</span>
               </div>
             )}
 
@@ -891,10 +905,10 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                 <div className="flex items-center justify-between text-slate-900 font-bold">
                   <span className="flex items-center gap-1.5 text-[#D95D0F]">
                     <CheckCircle2 className="size-3.5" />
-                    Recorded Transcript in {activeLang.native} ({activeLang.label}):
+                    Recorded Transcript in {formatLanguageDisplayName(activeLang)}:
                   </span>
                   <Badge className="bg-orange-100 text-[#D95D0F] border-orange-200 text-[9px] font-mono">
-                    Sarvam Saaras STT
+                    Speech-to-Text
                   </Badge>
                 </div>
                 <p className="italic text-slate-800 font-medium">"{voiceTranscript}"</p>
@@ -910,7 +924,11 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
               value={form.title}
               onChange={(e) => setForm((cur) => ({ ...cur, title: e.target.value }))}
               onBlur={fetchAiAssist}
-              placeholder={`e.g., Issue title in ${activeLang.label} or English...`}
+              placeholder={
+                activeLang.key === "en"
+                  ? "e.g., Deep pothole on Main Road near Metro Gate 2"
+                  : `e.g., Issue title in ${activeLang.label}...`
+              }
               maxLength={200}
               className="border-stone-300 rounded-xl"
             />
@@ -941,7 +959,11 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
               value={form.description}
               onChange={(e) => setForm((cur) => ({ ...cur, description: e.target.value }))}
               onBlur={fetchAiAssist}
-              placeholder={`Describe the civic grievance in ${activeLang.label} (${activeLang.native}) or English...`}
+              placeholder={
+                activeLang.key === "en"
+                  ? "Describe the civic issue, exact landmark, road name, or safety hazard..."
+                  : `Describe the civic grievance in ${formatLanguageDisplayName(activeLang)}...`
+              }
               maxLength={2000}
               className="min-h-28 border-stone-300 rounded-xl"
             />
@@ -961,7 +983,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                   ) : (
                     <Sparkles className="size-3 text-orange-500" />
                   )}
-                  Translate {activeLang.label} to English (Sarvam AI)
+                  Translate to English
                 </Button>
               )}
             </div>
@@ -975,7 +997,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
                     English Translation (Municipal Normalized for Ward Triage)
                   </span>
                   <Badge className="bg-emerald-600 text-white text-[9px] px-1.5 py-0 font-mono">
-                    Sarvam Mayura:v1
+                    Official Translation
                   </Badge>
                 </div>
                 <p className="text-slate-800 leading-relaxed font-medium italic">
@@ -991,7 +1013,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
               <div className="flex items-center justify-between">
                 <span className="font-bold text-purple-900 flex items-center gap-1.5">
                   <Sparkles className="size-4 text-purple-600" />
-                  Gemini AI Civic Classification
+                  AI Civic Classification &amp; Triage
                 </span>
                 <Badge className="bg-purple-600 text-white text-[10px]">
                   {Math.round((aiInsight.confidence || 0.9) * 100)}% Confidence

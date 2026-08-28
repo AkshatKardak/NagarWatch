@@ -252,43 +252,54 @@ export default function LandingPage() {
       </section>
 
       {/* ── 2. HIGH-IMPACT STATS BAR ── */}
-      <section className="bg-[#0F172A] text-white py-12 border-y border-slate-800 shadow-inner">
-        <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center items-center justify-center divide-y md:divide-y-0 md:divide-x divide-slate-800">
-            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3 space-y-1">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-orange-400 tracking-tight">
-                50,000+
+      <section className="bg-[#0A101D] text-white py-14 border-y border-slate-800 shadow-2xl relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
+
+        <div className="container mx-auto px-4 md:px-6 max-w-7xl relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center items-center justify-center divide-y md:divide-y-0 md:divide-x divide-slate-800/80">
+            {/* Stat 1 */}
+            <motion.div whileHover={{ y: -2 }} className="pt-4 md:pt-0 px-4 space-y-1.5">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                50,000<span className="text-[#D95D0F]">+</span>
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">
+              <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
                 Complaints Resolved
               </div>
+              <p className="text-[11px] text-slate-400 font-medium">Citizen verified &amp; closed</p>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3 space-y-1">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-emerald-400 tracking-tight">
-                85.4%
+            {/* Stat 2 */}
+            <motion.div whileHover={{ y: -2 }} className="pt-4 md:pt-0 px-4 space-y-1.5">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                85.4<span className="text-emerald-400">%</span>
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">
-                SLA Resolution Rate
+              <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
+                SLA Compliance Rate
               </div>
+              <p className="text-[11px] text-slate-400 font-medium">Within Citizens Charter</p>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3 space-y-1">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-blue-400 tracking-tight">
-                24 Hours
+            {/* Stat 3 */}
+            <motion.div whileHover={{ y: -2 }} className="pt-4 md:pt-0 px-4 space-y-1.5">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                24 <span className="text-blue-400 text-2xl sm:text-3xl md:text-4xl font-extrabold">Hours</span>
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">
+              <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
                 Avg Response Speed
               </div>
+              <p className="text-[11px] text-slate-400 font-medium">Fast triage &amp; contractor dispatch</p>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.03 }} className="pt-4 md:pt-0 px-3 space-y-1">
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-amber-400 tracking-tight">
-                15 Wards
+            {/* Stat 4 */}
+            <motion.div whileHover={{ y: -2 }} className="pt-4 md:pt-0 px-4 space-y-1.5">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+                15 <span className="text-amber-400 text-2xl sm:text-3xl md:text-4xl font-extrabold">Wards</span>
               </div>
-              <div className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">
+              <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
                 Under Active Watch
               </div>
+              <p className="text-[11px] text-slate-400 font-medium">Real-time health monitoring</p>
             </motion.div>
           </div>
         </div>
