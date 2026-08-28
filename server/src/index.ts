@@ -36,11 +36,40 @@ import "./models/Notification";
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const ALLOWED_ORIGINS = [
+  "https://nagarwatch.netlify.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  process.env.CLIENT_URL?.replace(/\/$/, ""),
+  process.env.FRONTEND_URL?.replace(/\/$/, ""),
+].filter(Boolean) as string[];
+
+export function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true; // Allow non-browser requests (Postman, curl, webhooks)
+  const normalized = origin.replace(/\/$/, "");
+  if (ALLOWED_ORIGINS.includes(normalized)) return true;
+  if (normalized.endsWith(".netlify.app")) return true; // All Netlify branch and preview domains
+  if (normalized.endsWith(".vercel.app")) return true;
+  if (normalized.endsWith(".onrender.com")) return true;
+  return false;
+}
+
 // Middleware
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL || "http://localhost:3000", "http://localhost:3000"],
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS Blocked] Origin not allowed: ${origin}`);
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
   })
 );
 app.use(helmet());

@@ -4,10 +4,33 @@ import { setupSocketHandlers } from "../socket/handlers";
 
 let io: Server | undefined;
 
+const ALLOWED_SOCKET_ORIGINS = [
+  "https://nagarwatch.netlify.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  process.env.CLIENT_URL?.replace(/\/$/, ""),
+  process.env.FRONTEND_URL?.replace(/\/$/, ""),
+].filter(Boolean) as string[];
+
 export function initSocket(server: http.Server): Server {
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:3000",
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const normalized = origin.replace(/\/$/, "");
+        if (
+          ALLOWED_SOCKET_ORIGINS.includes(normalized) ||
+          normalized.endsWith(".netlify.app") ||
+          normalized.endsWith(".vercel.app") ||
+          normalized.endsWith(".onrender.com")
+        ) {
+          callback(null, true);
+        } else {
+          callback(new Error(`Origin ${origin} not allowed by Socket.io CORS`));
+        }
+      },
       methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
       credentials: true,
     },
