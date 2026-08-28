@@ -304,7 +304,7 @@ export function LocationPicker({
             <Input
               value={w3wInput}
               onChange={(e) => setW3wInput(e.target.value)}
-              placeholder="///what3words (e.g. filled.count.soap)"
+              placeholder="/// 3-word code (e.g. filled.count.soap)"
               className="h-10 rounded-xl border-stone-300 font-mono text-xs text-slate-800 placeholder:text-slate-400 bg-[#FAF8F5]/40"
             />
           </div>

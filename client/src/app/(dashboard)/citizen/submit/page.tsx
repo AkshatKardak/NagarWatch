@@ -37,7 +37,7 @@ export default function SubmitComplaintPage() {
             Submit a Civic Grievance
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-            Report road potholes, garbage accumulation, water leakages, or streetlights. Voice record in your native state language, pin with What3Words, and get verified resolution.
+            Report road potholes, garbage accumulation, water leakages, or streetlights. Voice record in your native state language, pinpoint on the live map, and get verified resolution.
           </p>
         </div>
 

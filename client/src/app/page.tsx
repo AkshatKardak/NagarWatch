@@ -103,7 +103,7 @@ export default function LandingPage() {
               <p className="text-base sm:text-lg text-slate-600 max-w-2xl leading-relaxed font-normal">
                 NagarWatch bridges Indian citizens directly with municipal authorities and official{" "}
                 <strong className="text-slate-900 font-semibold">CPWD-enlisted contractors</strong>.
-                Backed by <strong>Gemini AI triage</strong>, <strong>Before/After citizen verification</strong>,
+                Backed by <strong>intelligent civic triage</strong>, <strong>Before/After citizen verification</strong>,{" "}
                 <strong>Sovereign India heatmaps</strong>, and <strong>RTI Act 2005 legal drafting</strong>.
               </p>
 
@@ -208,7 +208,7 @@ export default function LandingPage() {
                     <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-2">
                       <Sparkles className="size-4" />
                     </div>
-                    <h5 className="text-xs font-bold text-slate-900">Gemini AI Assistant</h5>
+                    <h5 className="text-xs font-bold text-slate-900">AI Civic Assistant</h5>
                     <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
                       Auto-categorizes severity, dept, and SLA routing
                     </p>
@@ -464,7 +464,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-lg font-bold text-slate-900">Snap Photo or Voice Record</h3>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                Capture the road hazard or speak your grievance in Hindi, Marathi, or English. Gemini AI auto-detects category and location.
+                Capture the road hazard or speak your grievance in your native state language. Automated triage detects category, severity, and location.
               </p>
             </div>
 

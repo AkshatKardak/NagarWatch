@@ -1083,7 +1083,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
               }`}
             >
               <span className="text-[#D95D0F] font-black text-sm">///</span>
-              what3words
+              3-Word Code
             </button>
 
             <button
@@ -1127,7 +1127,7 @@ export function ComplaintForm({ onSuccess }: { onSuccess?: (complaint: IComplain
           {locationMode === "w3w" && (
             <div className="space-y-2 p-4 bg-orange-50/40 rounded-xl border border-orange-200">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                what3words address (e.g. filled.count.soap)
+                3-Word Micro-Location (e.g. filled.count.soap)
               </label>
               <div className="flex gap-2">
                 <Input

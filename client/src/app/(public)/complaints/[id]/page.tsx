@@ -370,7 +370,7 @@ export default function PublicComplaintDetail({ params }: PageProps) {
                 <div className="flex flex-wrap gap-2 pt-1">
                   {complaint.location.what3words && (
                     <Badge variant="outline" className="font-mono text-xs border-orange-300 bg-orange-50 text-[#D95D0F]">
-                      What3Words: {complaint.location.what3words}
+                      3-Word Pin: {complaint.location.what3words}
                     </Badge>
                   )}
                   {complaint.location.landmark && (

@@ -1,275 +1,367 @@
 # 🏙️ NagarWatch — Real-Time Civic Issue Reporting & Governance Platform
 
 <p align="center">
-  <img src="client/public/Navbar.png" alt="NagarWatch Platform" width="100%" />
+  <img src="client/public/Navbar.png" alt="NagarWatch Platform Banner" width="100%" />
 </p>
 
-> NagarWatch is a full-stack civic governance platform bridging the gap between citizens and local authorities across Indian municipalities.
+> **NagarWatch** is an enterprise-grade, real-time civic issue reporting, tracking, and governance platform engineered specifically for Indian municipalities. It directly bridges citizens, municipal ward authorities, and Central Public Works Department (CPWD) contractors to enforce strict Citizens' Charter SLAs, verified repairs, and complete legal accountability.
 
-[![Next.js](https://img.shields.io/badge/Next.js-black?logo=next.js)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-blue?logo=typescript)](https://typescriptlang.org)
-[![React](https://img.shields.io/badge/React-blue?logo=react)](https://react.dev)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css)](https://tailwindcss.com)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js)](https://nodejs.org)
-[![Express.js](https://img.shields.io/badge/Express.js-000000?logo=express)](https://expressjs.com)
-[![Clerk](https://img.shields.io/badge/Clerk-purple?logo=clerk)](https://clerk.com)
-[![Gemini](https://img.shields.io/badge/Gemini-orange?logo=google)](https://ai.google.dev)
-[![MongoDB](https://img.shields.io/badge/MongoDB-green?logo=mongodb)](https://mongodb.com)
-[![Redis](https://img.shields.io/badge/Redis-red?logo=redis)](https://redis.io)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://typescriptlang.org)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js)](https://nodejs.org)
+[![Express.js](https://img.shields.io/badge/Express.js-4.x-000000?logo=express)](https://expressjs.com)
+[![Sarvam AI](https://img.shields.io/badge/Sarvam_AI-Indic_Languages-orange)](https://www.sarvam.ai)
+[![Clerk](https://img.shields.io/badge/Clerk-Auth-purple?logo=clerk)](https://clerk.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?logo=mongodb)](https://mongodb.com)
+[![Redis](https://img.shields.io/badge/Redis-Upstash-red?logo=redis)](https://redis.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
 
 ---
 
-## Problem Statement
+## 📌 Problem Statement
 
-Urban cities frequently face unresolved civic issues — potholes, garbage accumulation, water leakages, and broken streetlights. Current complaint systems suffer from:
+Urban cities across India frequently face chronic, unresolved civic infrastructure breakdowns — deep potholes, overflowing garbage dumps, water supply pipe leakages, hazardous drainage clogs, and dark, non-functioning streetlights. 
 
-- **Fragmented Channels:** Complaints scattered across helplines, WhatsApp groups, and broken portals with no centralized record.
-- **Zero Visibility:** Lack of real-time progress updates or tracking for citizens after grievance submission.
-- **Redundant Reports:** Frequent duplicate complaints for the exact same physical issue crowding municipal queues.
-- **Inefficient Triage:** Lack of automated priority ranking and intelligent department routing for authorities.
-- **No SLA Enforcement:** Absence of strict Citizens' Charter SLA accountability, resulting in indefinitely pending grievances.
-- **Unverified Repairs:** Substandard repairs marked resolved without objective citizen-side verification.
-- **Untracked Contractors:** Lack of performance benchmarks and blacklist enforcement for municipal contractors.
-
----
-
-## Proposed Solution
-
-NagarWatch provides a centralized, transparent civic operating system where:
-
-- **Citizens** report, upvote, and track grievances in real time with multilingual (English, Hindi, Marathi) and voice input capabilities.
-- **Authorities** manage workflows, dispatch work orders to enlisted contractors, and upload photographic proof of resolution.
-- **Citizens Verify Resolutions** by reviewing Before vs After photo proofs to confirm resolution or reopen substandard work with recorded reasons.
-- **Administrators** monitor city-wide performance, explainable Ward Health scores, and Central Public Works Department (CPWD) contractor verification queues.
-- **Gemini AI** auto-categorizes complaints, assesses severity, drafts legally formatted RTI Act 2005 petitions, and compiles weekly executive summaries.
-- **Socket.IO** delivers instant real-time synchronization across map viewers, field officers, and citizen dashboards.
+Traditional municipal redressal systems suffer from fundamental structural failures:
+- **Fragmented Grievance Channels:** Complaints are scattered across disconnected helpline numbers, informal WhatsApp groups, social media tags, and broken municipal portals without a centralized record.
+- **Zero Real-Time Visibility:** Citizens receive no automated milestone tracking or GPS visibility after submitting a grievance, leaving them in the dark regarding status or assigned contractors.
+- **Redundant & Duplicate Submissions:** Multiple citizens report the same physical pothole or broken pipe, flooding municipal queues with duplicate tickets and wasting public resources.
+- **Inefficient Triage & Routing:** Lack of automated priority ranking, department triage, and SLA routing causes urgent public safety hazards to sit unattended.
+- **Absence of SLA Enforcement:** No strict Citizens' Charter timeline accountability, resulting in grievances remaining "under review" indefinitely.
+- **Unverified Repairs & Ghost Closures:** Field work is routinely marked "Resolved" on government portals without mandatory, objective photographic proof or citizen-side verification.
+- **Untracked Municipal Contractors:** Lack of transparent performance metrics, objective quality benchmarking, and automated debarred contractor blacklist enforcement.
 
 ---
 
-## Tech Stack
+## 💡 Proposed Solution
 
-- **Frontend:** Next.js, TypeScript, React, Tailwind CSS
-- **Backend:** Node.js, Express.js, TypeScript
-- **Authentication:** Clerk
-- **AI Assistant:** Gemini
-- **Database:** MongoDB, Redis
+**NagarWatch** delivers a modern, transparent civic operating system uniting citizens, municipal authorities, and government contractors in a single synchronized ecosystem:
 
----
-
-## User Roles & Access Guide
-
-NagarWatch features role-based access control (RBAC).
-
-### 1. Citizen (`citizen`)
-- **How to Access:** Select **Citizen** during sign-up or sign-in.
-- **Available Routes:**
-  - `/citizen/dashboard`
-  - `/citizen/submit`
-  - `/citizen/complaints`
-  - `/citizen/profile` (or `/profile`)
-  - `/citizen/rti`
-  - `/notifications`
-  - `/map`
-
-### 2. Authority / Municipal Officer (`authority`)
-- **How to Access:** Select **Municipal Authority** during sign-up.
-- **Available Routes:**
-  - `/authority/dashboard`
-  - `/authority/complaints`
-  - `/authority/analytics`
-  - `/authority/profile` (or `/profile`)
-
-### 3. Contractor (`contractor`)
-- **How to Access:** Select **Contractor** during sign-up or register with CPWD enlistment number.
-- **Available Routes:**
-  - `/contractor/dashboard`
-  - `/contractor/tasks`
-  - `/contractor/profile` (or `/profile`)
-
-### 4. Admin (`admin`)
-- **How to Access:**
-  - Admin access is protected and not open for self-registration.
-  - Option A (Development / Demo): Click **Demo Admin Access** on `/sign-in` or use the quick role switcher in `/profile`.
-  - Option B (Production): In MongoDB, set `role: "admin"` for the user document in the `users` collection, or set `"role": "admin"` in Clerk Dashboard under user `publicMetadata`.
-- **Available Routes:**
-  - `/admin/dashboard`
-  - `/admin/users`
-  - `/admin/wards`
-  - `/admin/contractors`
-  - `/admin/weekly-summary`
+- **13+ Indian State Languages & Voice Recording:** Citizens file grievances in their native regional language (Hindi, Marathi, Tamil, Telugu, Kannada, Bengali, Gujarati, Malayalam, Punjabi, Odia, Assamese, Urdu, English) using text or voice speech-to-text, auto-translated to English for ward officer triage.
+- **Intelligent Geospatial Duplicate Prevention:** MongoDB `$geoNear` 50-meter radius clustering automatically detects existing nearby complaints, giving citizens the option to upvote existing issues rather than duplicating tickets.
+- **Sovereign India Live Map & Density Heatmap:** Interactive Leaflet GIS interface strictly bounded to the Republic of India with real-time geospatial markers, density cluster heatmaps, and precise coordinate pinning.
+- **Official CPWD Contractor Performance Engine:** Integrated directly with the official Central Public Works Department (CPWD) enlisted contractor database, auditing Class I–V licenses, tracking debarred contractor blacklists, and computing deterministic reliability scorecards (0–100).
+- **Citizen Before/After Proof Audit Lifecycle:** Authorities and contractors must upload timestamped resolution photos. Citizens inspect side-by-side Before vs After photo proofs to approve resolution or reopen substandard work with recorded mandatory reasons.
+- **Explainable Municipal Ward Health Scoring:** Deterministic 0–100 health index for every municipal ward based on SLA compliance, resolution speed, citizen reopening ratios, and active backlog density.
+- **Automated Legal RTI Act 2005 Petitions:** When municipal work exceeds statutory Citizens' Charter SLA deadlines, NagarWatch automatically generates legally formatted Section 6(1) Right to Information (RTI) petitions with instant official PDF download.
+- **Instant Real-Time Synchronization:** Socket.IO WebSocket channels keep field officers, map viewers, and citizen dashboards synchronized without manual page refreshes.
 
 ---
 
-## Unique Features
+## 📸 Screenshots
 
-- **National India Map Boundary & Heatmap:** Interactive Leaflet map strictly bounded to the Republic of India with real-time geospatial points and density intensity heatmap view.
-- **Official CPWD Government Contractor Integration:** Seeded and integrated with the official Central Public Works Department (CPWD) enlisted contractor dataset, blacklist checks, and verification workflow.
-- **Explainable Ward Health Scoring:** Transparent composite health index (0–100) calculated deterministically from resolution rates, SLA compliance, resolution speed, and citizen reopening ratios.
-- **Citizen Resolution Verification Lifecycle:** Before/After resolution photo proof verification where citizens confirm or reopen grievances with mandatory reason logging.
-- **Deterministic Contractor Performance Engine:** Weighted reliability scorecards based on on-time completion rates, SLA breach counts, and citizen verification rates.
-- **Multi-Language Grievance Submission:** Support for English, Hindi, and Marathi with automatic translation fallback.
-- **Voice Complaint Recording:** In-browser microphone speech-to-text recording with editable live transcripts.
-- **Gemini AI Complaint Assistant:** Automated categorization, severity estimation, department routing, and executive summary generation with deterministic keyword rule fallbacks.
+<div align="center">
+
+### 1. Landing Page & Real-Time Civic Intelligence Showcase
+<img src="screenshots/LandingPage.png" alt="NagarWatch Landing Page" width="95%" />
+
+<br/><br/>
+
+### 2. Multilingual Civic Grievance Submission (13+ State Languages & Voice STT)
+<img src="screenshots/ComplaintPage.png" alt="Grievance Submission Form" width="95%" />
+
+<br/><br/>
+
+### 3. Sovereign India Bounded Live Map & Density Heatmap
+<img src="screenshots/LiveMap.png" alt="Sovereign India Bounded Map" width="95%" />
+
+<br/><br/>
+
+### 4. Official CPWD Contractor Performance Scorecards & Registry
+<img src="screenshots/Contractor.png" alt="CPWD Contractor Registry" width="95%" />
+
+<br/><br/>
+
+### 5. Municipal Ward Health Index & City Analytics Hub
+<img src="screenshots/Analytics.png" alt="Municipal Analytics Hub" width="95%" />
+
+</div>
 
 ---
 
-## Key Features
+## ⚡ Key Features
 
-- **Geospatial Duplicate Prevention:** Automatically checks for existing complaints within a 50-meter radius using MongoDB `$geoNear` to prevent redundant submissions.
-- **Community Upvoting:** Citizens upvote local issues to increase grievance priority scores.
-- **Real-Time WebSockets:** Real-time updates for complaint submissions, status changes, assignments, and verifications via Socket.IO.
-- **Automated SLA Timers & Escalations:** SLA tracking per category with background jobs and email notifications.
-- **Legal RTI 2005 Generator:** Generates formatted Section 6(1) Right to Information (RTI) petitions for delayed municipal grievances.
-- **Notifications Center:** Centralized notification center with unread filtering and milestone alerts.
+- **Multi-Role Governance Platform:** Role-Based Access Control (RBAC) customized for **Citizens**, **Municipal Authorities**, **CPWD Contractors**, and **System Administrators**.
+- **Geospatial Duplicate Detection:** Proactive 50m radius geo-querying prevents redundant ticket submissions and promotes community issue upvoting.
+- **Automated Citizens' Charter SLA Engine:** Real-time countdown timers mapped per category (Potholes: 72h, Garbage: 24h, Water Supply: 24h, Streetlights: 48h, Drainage: 36h) with automated escalation triggers.
+- **Before vs After Resolution Audit:** Dual photographic matrix with citizen approval/reopen workflow and mandatory reason logging.
+- **Canonical Notifications Center:** Real-time in-app alerts, unread filtering, and status milestone tracking across the complaint lifecycle.
+- **Community Upvoting & Priority Scoring:** Priority calculation engine blending citizen upvotes, grievance age, severity score, and emergency road factors.
+- **RTI Act 2005 Section 6(1) Drafting:** Automated legal drafting of RTI petitions citing Public Information Officers (PIO), complaint IDs, delay duration, and formal inspection requests.
 
 ---
 
-## Project Structure
+## 🌟 Unique Features
+
+- **13+ Official Indian State Languages:** Native script and speech support across Pan-India (`hi-IN`, `mr-IN`, `ta-IN`, `te-IN`, `kn-IN`, `bn-IN`, `gu-IN`, `ml-IN`, `pa-IN`, `od-IN`, `as-IN`, `ur-IN`, `en-IN`) powered by Sarvam AI Indic translation & speech models.
+- **Sovereign India Boundary GIS:** Strict geographical bounding ensuring all civic incidents, map panning, and GPS reverse geocoding remain strictly within sovereign Indian territory (`[6.0, 68.0]` to `[37.5, 97.5]`).
+- **Official CPWD Contractor Dataset Integration:** Direct integration with official Central Public Works Department contractor datasets, auto-verifying enlistment numbers, classes, contract categories, and debarred blacklists.
+- **Deterministic Ward Health Index:** Transparent, explainable 0–100 health scoring formula evaluating on-time SLA rates, resolution velocity, low reopening ratios, and backlog density with diagnostic guidance for municipal commissioners.
+- **Contractor Reliability Benchmark:** Objective scorecards based on on-time completion rates, verified repairs, SLA breaches, and historical citizen ratings.
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework:** [Next.js 15](https://nextjs.org) (App Router, Server Components & Client Hydration)
+- **Language:** [TypeScript](https://www.typescriptlang.org) (100% strict type safety)
+- **UI Library:** [React 19](https://react.dev)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com), [Shadcn UI](https://ui.shadcn.com), [Lucide Icons](https://lucide.dev)
+- **Animations:** [Framer Motion](https://www.framer.com/motion/)
+- **Mapping & GIS:** [Leaflet](https://leafletjs.com), [React-Leaflet](https://react-leaflet.js.org), [Leaflet.heat](https://github.com/Leaflet/Leaflet.heat), OpenStreetMap
+- **State Management:** [Zustand](https://zustand-demo.pmnd.rs)
+- **HTTP Client:** [Axios](https://axios-http.com)
+
+### Backend
+- **Runtime:** [Node.js 20+](https://nodejs.org)
+- **Framework:** [Express.js](https://expressjs.com) with TypeScript
+- **Authentication & RBAC:** [Clerk](https://clerk.com) (JWT session verification, metadata role sync)
+- **Database:** [MongoDB Atlas](https://www.mongodb.com/atlas) with [Mongoose](https://mongoosejs.com)
+- **Caching & Queues:** [Redis](https://redis.io) (Upstash) & [BullMQ](https://bullmq.io)
+- **Real-Time WebSockets:** [Socket.IO](https://socket.io) (Bidirectional live synchronization)
+- **Media Storage:** [Cloudinary](https://cloudinary.com) (Image & audio uploads via Multer)
+- **Indic AI & Multilingual Translation:** [Sarvam AI](https://www.sarvam.ai) (Mayura Indic Translation & Saaras Speech-to-Text)
+- **Civic Intelligence:** [Google Gemini AI](https://ai.google.dev) (Category detection, severity estimation, RTI drafting)
+
+---
+
+## 📊 Datasets & API Sources
+
+| Dataset / API | Source / Endpoint | Description |
+| :--- | :--- | :--- |
+| **CPWD Enlisted Contractors** | [OpenData.best Catalog](https://opendata.best/catalog/in_cpwd_enlisted_contractors) · `https://opendata.best/api/v1/in_cpwd_enlisted_contractors` | Official Central Public Works Department 30-contractor dataset with enlistment numbers, classes, categories, and authority details. |
+| **CPWD Debarred Contractors** | Official CPWD Vigilance / Ministry of Housing & Urban Affairs (MoHUA) | Debarred and blacklisted contractor records used for automated integrity verification. |
+| **OpenStreetMap & Nominatim** | `https://nominatim.openstreetmap.org/reverse` | High-precision reverse geocoding restricted to Indian sovereign coordinates (`countrycodes=in`). |
+| **Republic of India GeoJSON** | Sovereign India Boundary Definition | Precise polygon GeoJSON defining state boundaries and sovereign outer limits of India. |
+
+---
+
+## 📁 Folder Structure
 
 ```
 NagarWatch/
-├── client/                                 # Next.js Frontend
-│   ├── public/                             # Static assets and icons
-│   │   ├── Navbar.png                      # Brand header banner
-│   │   └── favicon.png
+├── client/                                 # Next.js Frontend Application
+│   ├── public/                             # Public static assets, brand banners, icons
+│   │   ├── Navbar.png                      # Official platform header banner
+│   │   └── favicon.png                     # Platform favicon
 │   └── src/
 │       ├── app/
-│       │   ├── page.tsx                    # Landing page with hero stats bar
+│       │   ├── page.tsx                    # Landing page with high-impact stats bar
 │       │   ├── (dashboard)/
-│       │   │   ├── admin/                  # Admin dashboard, users, wards, contractors
-│       │   │   │   └── contractors/        # CPWD verification queue & blacklist
-│       │   │   ├── authority/              # Authority dashboard, complaints, analytics
-│       │   │   ├── citizen/                # Citizen dashboard, complaints, submit, RTI
-│       │   │   ├── contractor/             # Contractor dashboard, performance, tasks
-│       │   │   ├── notifications/          # Canonical notifications center
-│       │   │   └── profile/                # Universal profile & role manager
+│       │   │   ├── admin/                  # Admin Hub (Dashboard, Users, Wards, CPWD Contractors)
+│       │   │   │   └── analytics/          # Admin Municipal Analytics Hub
+│       │   │   ├── authority/              # Authority Dashboard, Complaints & Dispatch
+│       │   │   ├── citizen/                # Citizen Dashboard, Submit Grievance, My Issues, RTI
+│       │   │   │   └── submit/             # Multilingual Grievance Filing Page
+│       │   │   ├── contractor/             # Contractor Task Management & Proof Upload
+│       │   │   ├── notifications/          # Centralized Notifications Center
+│       │   │   └── profile/                # Universal Profile & Role Management
 │       │   ├── (public)/
-│       │   │   ├── complaints/[id]/        # Detail view & Citizen Verification Card
-│       │   │   └── map/                    # Bounded India map & Heatmap view
-│       │   ├── sign-in/                    # Sign-in page with Demo Admin access
-│       │   └── sign-up/                    # Sign-up page with role selection
+│       │   │   ├── analytics/              # Public Municipal Analytics & Ward Health
+│       │   │   ├── complaints/             # Public Grievances Feed & Verification
+│       │   │   ├── contractors/            # Public CPWD Contractor Registry
+│       │   │   └── map/                    # Bounded Sovereign India Map & Density Heatmap
+│       │   ├── sign-in/                    # Sign-In with Demo Access
+│       │   └── sign-up/                    # Sign-Up with RBAC Role Selection
 │       ├── components/
-│       │   ├── analytics/
-│       │   │   └── WardHealthOverview.tsx  # Explainable Ward Health scorecard
-│       │   ├── complaints/
-│       │   │   ├── CitizenVerificationCard.tsx  # Before vs After photo verification
-│       │   │   └── ComplaintForm.tsx       # Multilingual + voice input form
-│       │   ├── layout/                     # Navbar, Sidebar, Footer
-│       │   └── map/
-│       │       ├── CivicMap.tsx            # India-bounded map & Heatmap layer
-│       │       ├── indiaBoundary.json      # Official India boundary GeoJSON
-│       │       └── MapPicker.tsx           # Coordinate picker
-│       ├── lib/
-│       │   ├── api.ts                      # Axios API client methods
-│       │   └── socket.ts                   # Socket.IO client
-│       └── types/                          # TypeScript definitions
+│       │   ├── analytics/                  # Municipal Analytics Hub & Ward Scorecards
+│       │   ├── auth/                       # Google OAuth Role Selection Modal
+│       │   ├── complaints/                 # ComplaintForm, CitizenVerificationCard, NearbyModal
+│       │   ├── layout/                     # Navbar, Sidebar, Footer, MobileNav
+│       │   └── map/                        # CivicMap, MapPicker, India GeoJSON boundary
+│       ├── lib/                            # Axios API client, Socket.IO client, What3Words
+│       ├── store/                          # Zustand global state stores
+│       └── types/                          # TypeScript interfaces & domain models
 │
-└── server/                                 # Node.js Express Backend
-    └── src/
-        ├── config/
-        │   ├── cloudinary.ts               # Cloudinary media storage
-        │   ├── db.ts                       # MongoDB connection
-        │   ├── redis.ts                    # Redis cache & BullMQ TCP client
-        │   └── socket.ts                   # Socket.IO server configuration
-        ├── middleware/
-        │   ├── auth.ts                     # Clerk auth & RBAC middleware
-        │   ├── errorHandler.ts             # Centralized error handler
-        │   └── upload.ts                   # Multer image/audio upload middleware
-        ├── models/
-        │   ├── BlacklistedContractor.ts    # Debarred contractor registry
-        │   ├── Complaint.ts                # Complaint schema with verification fields
-        │   ├── Contractor.ts               # CPWD contractor schema & performance
-        │   ├── Notification.ts             # Notification schema
-        │   ├── User.ts                     # User & role schema
-        │   └── Ward.ts                     # Ward boundaries & health
-        ├── routes/
-        │   ├── ai.ts                       # AI assistant, translation, transcription
-        │   ├── analytics.ts                # Heatmap, Ward Health, Contractor scores
-        │   ├── complaints.ts               # Resolution proof, verify, reopen APIs
-        │   ├── contractors.ts              # CPWD verification, blacklist, registration
-        │   ├── users.ts                    # Profile, sync, role assignment
-        │   └── wards.ts                    # Ward governance APIs
-        ├── seeds/
-        │   ├── cpwdContractors.seed.ts     # CPWD 30-contractor dataset seeder
-        │   └── cpwdDebarredContractors.seed.ts # CPWD debarred contractor seeder
-        └── services/
-            ├── ai/
-            │   └── gemini.service.ts       # Gemini AI assistant + rule fallback
-            ├── analytics/
-            │   ├── contractorPerformance.service.ts # Performance scoring
-            │   ├── heatmap.service.ts      # Heatmap point aggregation
-            │   └── wardHealth.service.ts   # Ward Health scoring formula
-            ├── complaints/
-            │   └── verification.service.ts # Citizen resolution lifecycle
-            ├── priority/
-            │   └── priority.service.ts     # Priority calculation engine
-            ├── transcription/
-            │   └── sarvamSpeech.service.ts # Speech-to-Text transcription
-            ├── translation/
-            │   └── sarvamTranslation.service.ts # Multilingual translation
-            └── contractorVerification.service.ts # CPWD dataset verification
+├── server/                                 # Node.js Express Backend
+│   └── src/
+│       ├── config/                         # MongoDB, Redis, Cloudinary, Socket.IO
+│       ├── middleware/                     # Clerk Auth, RBAC Role Checks, Multer Upload, ErrorHandler
+│       ├── models/                         # Complaint, Contractor, Blacklist, User, Ward, Notification
+│       ├── routes/                         # Complaints, Analytics, Contractors, AI, Users, Wards
+│       ├── seeds/                          # CPWD Contractors & Blacklist Database Seeders
+│       └── services/
+│           ├── ai/                         # Gemini AI Assistant & Triage Engine
+│           ├── analytics/                  # Ward Health Index, Heatmaps, Contractor Performance
+│           ├── complaints/                 # Verification & Resolution Lifecycle
+│           ├── priority/                   # Dynamic Grievance Priority Calculator
+│           ├── transcription/              # Sarvam AI Saaras Speech-to-Text (13+ Languages)
+│           ├── translation/                # Sarvam AI Mayura Translation Engine (13+ Languages)
+│           └── contractorVerification.service.ts # CPWD Validation Engine
+│
+└── screenshots/                            # Application Demonstration Screenshots
+    ├── LandingPage.png                     # Landing Page Screenshot
+    ├── ComplaintPage.png                   # Grievance Submission Form Screenshot
+    ├── LiveMap.png                         # Sovereign India Live Map Screenshot
+    ├── Contractor.png                      # CPWD Contractor Registry Screenshot
+    └── Analytics.png                       # Municipal Analytics Hub Screenshot
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 20+
-- MongoDB database
-- Redis instance (Upstash or local)
-- Clerk account
-- Google AI Studio key (Gemini)
-- Sarvam AI key (Optional, for Indian language translation and speech)
-- Cloudinary account (Media storage)
+Make sure you have the following installed:
+- **Node.js**: Version `20.x` or higher
+- **npm** or **pnpm**
+- **MongoDB**: Local MongoDB instance or free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
+- **Redis**: Local Redis server or free [Upstash Redis](https://upstash.com) instance
+- **Clerk Account**: Free account at [Clerk.com](https://clerk.com) for authentication
+
+Optional API Keys:
+- **Cloudinary**: For media and photo proof storage
+- **Sarvam AI API Key**: For Indic multilingual translation and speech-to-text
+- **Google AI Studio Key**: For Gemini AI categorization and RTI generation
+
+---
 
 ### Installation
 
+1. **Clone the Repository:**
 ```bash
 git clone https://github.com/AkshatKardak/NagarWatch.git
 cd NagarWatch
-
-# Install dependencies
-cd server && npm install
-cd ../client && npm install
 ```
+
+2. **Install Server Dependencies:**
+```bash
+cd server
+npm install
+```
+
+3. **Install Client Dependencies:**
+```bash
+cd ../client
+npm install
+```
+
+---
 
 ### Environment Setup
 
-1. Copy `.env.example` to `server/.env` and fill in credentials:
-```bash
-cp server/.env.example server/.env
+#### 1. Server Environment Configuration (`server/.env`)
+Create a `.env` file in the `server` directory:
+```env
+PORT=5000
+NODE_ENV=development
+CLIENT_URL=http://localhost:3000
+
+# MongoDB
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/nagarwatch?retryWrites=true&w=majority
+
+# Redis (Upstash or local)
+REDIS_URL=redis://localhost:6379
+
+# Clerk Authentication
+CLERK_SECRET_KEY=sk_test_...
+CLERK_PUBLISHABLE_KEY=pk_test_...
+
+# Cloudinary Storage
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# AI & Indic Language Services
+GEMINI_API_KEY=your_gemini_key
+SARVAM_API_KEY=your_sarvam_key
 ```
 
-2. Copy `.env.local.example` to `client/.env.local` and fill in credentials:
-```bash
-cp client/.env.local.example client/.env.local
-```
+#### 2. Client Environment Configuration (`client/.env.local`)
+Create a `.env.local` file in the `client` directory:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 
-### Running Locally
-
-```bash
-# Run server
-cd server && npm run dev
-
-# Run client
-cd client && npm run dev
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/citizen/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/citizen/dashboard
 ```
 
 ---
 
-## Contributing
+### Running the Application
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. **Seed the CPWD Contractors Database (First Time Only):**
+```bash
+cd server
+npm run seed:contractors
+```
+
+2. **Start the Backend Server:**
+```bash
+cd server
+npm run dev
+# Server will run on http://localhost:5000
+```
+
+3. **Start the Next.js Frontend:**
+```bash
+cd client
+npm run dev
+# Client will run on http://localhost:3000
+```
+
+4. **Access NagarWatch:** Open [http://localhost:3000](http://localhost:3000) in your web browser.
 
 ---
 
-## License
+## 🍴 Forking & Contributing Guide
 
-MIT License © 2026 [Akshat Kardak](https://github.com/AkshatKardak)
+Contributions are welcome! Follow these steps to contribute:
+
+1. **Fork the Repository:** Click the **Fork** button at the top right of this page.
+2. **Clone your Fork:**
+```bash
+git clone https://github.com/<your-username>/NagarWatch.git
+cd NagarWatch
+```
+3. **Create a Feature Branch:**
+```bash
+git checkout -b feature/amazing-feature
+```
+4. **Make Your Changes & Test:**
+```bash
+# Verify client build
+cd client && npx tsc --noEmit
+
+# Verify server build
+cd ../server && npx tsc --noEmit
+```
+5. **Commit Your Changes:**
+```bash
+git commit -m "feat: add amazing feature description"
+```
+6. **Push to Your Fork:**
+```bash
+git push origin feature/amazing-feature
+```
+7. **Open a Pull Request:** Navigate to the original repository and open a Pull Request explaining your changes.
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for full details.
+
+---
+
+## 👨‍💻 Creator & Author
+
+**Akshat Kardak**
+- **GitHub:** [@AkshatKardak](https://github.com/AkshatKardak)
+- **Project Repository:** [https://github.com/AkshatKardak/NagarWatch](https://github.com/AkshatKardak/NagarWatch)
+
+---
+
+<p align="center">
+  <b>NagarWatch</b> — Empowering Indian Citizens with Sovereign Civic Governance &amp; SLA Transparency 🇮🇳
+</p>

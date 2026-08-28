@@ -137,7 +137,7 @@ export function ComplaintDetail({
           </div>
           {complaint.location?.what3words && (
             <div className="space-y-1">
-              <p className="font-bold text-slate-500 uppercase text-[10px]">What3Words Micro-Location</p>
+              <p className="font-bold text-slate-500 uppercase text-[10px]">3-Word Micro-Location</p>
               <p className="font-mono font-bold text-[#D95D0F]">{complaint.location.what3words}</p>
             </div>
           )}
