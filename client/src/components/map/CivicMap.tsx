@@ -24,8 +24,8 @@ const TILE_ATTRIBUTION =
 
 // National boundary of India coordinates bounding box
 const INDIA_BOUNDS: L.LatLngBoundsExpression = [
-  [6.4626999, 68.1097], // South-West
-  [37.084107, 97.395561], // North-East
+  [6.0, 67.5], // South-West (padded)
+  [37.5, 98.0], // North-East (padded)
 ];
 
 const STATUS_COLORS: Record<string, string> = {
