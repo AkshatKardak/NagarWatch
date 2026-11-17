@@ -49,7 +49,7 @@ Traditional municipal redressal systems suffer from fundamental structural failu
 - **13+ Indian State Languages & Voice Recording:** Citizens file grievances in their native regional language (Hindi, Marathi, Tamil, Telugu, Kannada, Bengali, Gujarati, Malayalam, Punjabi, Odia, Assamese, Urdu, English) using text or voice speech-to-text, auto-translated to English for ward officer triage.
 - **Intelligent Geospatial Duplicate Prevention:** MongoDB `$geoNear` 50-meter radius clustering automatically detects existing nearby complaints, giving citizens the option to upvote existing issues rather than duplicating tickets.
 - **Sovereign India Live Map & Density Heatmap:** Interactive Leaflet GIS interface strictly bounded to the Republic of India with real-time geospatial markers, density cluster heatmaps, and precise coordinate pinning.
-- **Official CPWD Contractor Performance Engine:** Integrated directly with the official Central Public Works Department (CPWD) enlisted contractor database, auditing Class I–V licenses, tracking debarred contractor blacklists, and computing deterministic reliability scorecards (0–100).
+- **CPWD Contractor Performance Engine (Simulated Workflow):** Uses a static open dataset of Central Public Works Department (CPWD) enlisted contractors and debarred blacklists to compute deterministic reliability scorecards (0–100). *Note: Contractor assignment is simulated pending integration with real municipal ERP systems (there is currently no public Indian municipal API); the CPWD directory is a static dataset.*
 - **Citizen Before/After Proof Audit Lifecycle:** Authorities and contractors must upload timestamped resolution photos. Citizens inspect side-by-side Before vs After photo proofs to approve resolution or reopen substandard work with recorded mandatory reasons.
 - **Explainable Municipal Ward Health Scoring:** Deterministic 0–100 health index for every municipal ward based on SLA compliance, resolution speed, citizen reopening ratios, and active backlog density.
 - **Automated Legal RTI Act 2005 Petitions:** When municipal work exceeds statutory Citizens' Charter SLA deadlines, NagarWatch automatically generates legally formatted Section 6(1) Right to Information (RTI) petitions with instant official PDF download.
@@ -104,7 +104,7 @@ Traditional municipal redressal systems suffer from fundamental structural failu
 
 - **13+ Official Indian State Languages:** Native script and speech support across Pan-India (`hi-IN`, `mr-IN`, `ta-IN`, `te-IN`, `kn-IN`, `bn-IN`, `gu-IN`, `ml-IN`, `pa-IN`, `od-IN`, `as-IN`, `ur-IN`, `en-IN`) powered by Sarvam AI Indic translation & speech models.
 - **Sovereign India Boundary GIS:** Strict geographical bounding ensuring all civic incidents, map panning, and GPS reverse geocoding remain strictly within sovereign Indian territory (`[6.0, 68.0]` to `[37.5, 97.5]`).
-- **Official CPWD Contractor Dataset Integration:** Direct integration with official Central Public Works Department contractor datasets, auto-verifying enlistment numbers, classes, contract categories, and debarred blacklists.
+- **CPWD Contractor Dataset Integration (Static Dataset):** Seeding and reference verification against a static open dataset of Central Public Works Department contractors and blacklists. Contractor dispatch and work order tracking are simulated pending municipal API integrations.
 - **Deterministic Ward Health Index:** Transparent, explainable 0–100 health scoring formula evaluating on-time SLA rates, resolution velocity, low reopening ratios, and backlog density with diagnostic guidance for municipal commissioners.
 - **Contractor Reliability Benchmark:** Objective scorecards based on on-time completion rates, verified repairs, SLA breaches, and historical citizen ratings.
 
@@ -136,6 +136,8 @@ Traditional municipal redressal systems suffer from fundamental structural failu
 ---
 
 ## 📊 Datasets & API Sources
+
+> **Municipal Contractor Integration Notice:** Contractor assignment is simulated pending a real municipal integration (there is no public Indian municipal API). The CPWD registry and debarred blacklist are seeded from a static dataset.
 
 | Dataset / API | Source / Endpoint | Description |
 | :--- | :--- | :--- |

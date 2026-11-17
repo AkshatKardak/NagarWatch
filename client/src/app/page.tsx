@@ -371,9 +371,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
                   <HardHat className="size-6" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">Official CPWD Contractor Engine</h3>
+                <h3 className="text-lg font-bold text-slate-900">CPWD Contractor Engine</h3>
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-                  Integrated with official Central Public Works Department dataset. Auto-checks debarred blacklists, verifies Class I-V licenses, and scores reliability.
+                  Evaluated against a static CPWD open dataset with debarred blacklists and reliability scoring. Contractor assignment is simulated pending real municipal API integration.
                 </p>
               </Card>
             </motion.div>
@@ -481,6 +481,9 @@ export default function LandingPage() {
               <h3 className="text-lg font-bold text-slate-900">CPWD Contractor Dispatched</h3>
               <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
                 Work order assigned to verified municipal contractor with strict SLA countdown timer and automated escalation triggers.
+              </p>
+              <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/80 rounded-md px-2 py-1 mt-2 text-left sm:text-center">
+                Note: Contractor assignment is simulated pending real municipal integration; CPWD registry is a static dataset.
               </p>
             </div>
 

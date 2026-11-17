@@ -95,6 +95,14 @@ export default function ContractorDashboardPage() {
         </Link>
       </div>
 
+      {/* Integration & Static Dataset Notice */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+        <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+        <p className="text-[11px] leading-relaxed text-amber-700">
+          <strong>Simulation Notice:</strong> Contractor assignment and dispatch are simulated pending a real municipal integration (no public Indian municipal API exists). The CPWD registry is seeded from a static dataset.
+        </p>
+      </div>
+
       {/* Feature 4: Contractor Performance Scorecard Banner */}
       <Card className="p-6 border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/50 rounded-2xl shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">

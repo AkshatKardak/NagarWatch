@@ -145,6 +145,14 @@ export default function AdminContractorsPage() {
         </div>
       </div>
 
+      {/* Integration & Static Dataset Notice */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+        <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+        <p className="text-[11px] leading-relaxed text-amber-700">
+          <strong>Notice:</strong> Contractor dispatch is simulated pending live municipal ERP integration (there is no public Indian municipal API). The CPWD registry and blacklist are seeded from a static dataset.
+        </p>
+      </div>
+
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
         {[

@@ -99,6 +99,14 @@ export default function ContractorsPage() {
           </div>
         </div>
 
+        {/* Integration & Static Dataset Notice */}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+          <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-[11px] leading-relaxed text-amber-700">
+            <strong>System Notice:</strong> Municipal contractor assignment is simulated pending real municipal ERP integration (there is no public Indian municipal API). The CPWD registry and debarment records are seeded from a static dataset.
+          </p>
+        </div>
+
         {/* Filters & Search */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
           {/* Department buttons */}
