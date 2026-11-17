@@ -153,6 +153,8 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-void bootstrap();
+if (process.env.NODE_ENV !== "test") {
+  void bootstrap();
+}
 
 export default app;
