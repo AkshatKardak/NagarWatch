@@ -44,12 +44,12 @@ const LIVE_PULSES = [
 
 /* ─── Civic Issue Categories ─────────────────────────────────────── */
 const CIVIC_CATEGORIES = [
-  { name: "Potholes & Roads", icon: "🛣️", sla: "72h SLA", count: "12,400+ fixed", color: "bg-orange-50 text-[#D95D0F] border-orange-200" },
-  { name: "Garbage & Waste", icon: "🗑️", sla: "24h SLA", count: "18,200+ cleared", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  { name: "Water Supply & Leaks", icon: "💧", sla: "24h SLA", count: "9,600+ restored", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  { name: "Streetlights & Power", icon: "💡", sla: "48h SLA", count: "7,800+ repaired", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  { name: "Drainage & Flooding", icon: "🌊", sla: "36h SLA", count: "6,100+ unblocked", color: "bg-teal-50 text-teal-700 border-teal-200" },
-  { name: "Public Safety & Sanitation", icon: "🚸", sla: "48h SLA", count: "4,500+ resolved", color: "bg-purple-50 text-purple-700 border-purple-200" },
+  { name: "Potholes & Roads", icon: "🛣️", sla: "72h SLA", demoBenchmark: "Demo SLA: 72h", color: "bg-orange-50 text-[#D95D0F] border-orange-200" },
+  { name: "Garbage & Waste", icon: "🗑️", sla: "24h SLA", demoBenchmark: "Demo SLA: 24h", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { name: "Water Supply & Leaks", icon: "💧", sla: "24h SLA", demoBenchmark: "Demo SLA: 24h", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  { name: "Streetlights & Power", icon: "💡", sla: "48h SLA", demoBenchmark: "Demo SLA: 48h", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  { name: "Drainage & Flooding", icon: "🌊", sla: "36h SLA", demoBenchmark: "Demo SLA: 36h", color: "bg-teal-50 text-teal-700 border-teal-200" },
+  { name: "Public Safety & Sanitation", icon: "🚸", sla: "48h SLA", demoBenchmark: "Demo SLA: 48h", color: "bg-purple-50 text-purple-700 border-purple-200" },
 ];
 
 export default function LandingPage() {
@@ -241,8 +241,8 @@ export default function LandingPage() {
                     <HardHat className="size-4 text-[#D95D0F]" />
                     <span className="font-bold text-slate-800 text-[11px]">CPWD Contractor Registry</span>
                   </div>
-                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] font-extrabold">
-                    87/100 Avg Quality Score
+                  <Badge className="bg-stone-100 text-stone-700 border-stone-200 text-[10px] font-extrabold">
+                    Sample Benchmark (Demo)
                   </Badge>
                 </div>
               </div>
@@ -251,12 +251,17 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 2. HIGH-IMPACT STATS BAR ── */}
+      {/* ── 2. HIGH-IMPACT STATS BAR (SAMPLE / DEMO BENCHMARKS) ── */}
       <section className="bg-[#0A101D] text-white py-14 border-y border-slate-800 shadow-2xl relative overflow-hidden">
         {/* Subtle background glow */}
         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
 
         <div className="container mx-auto px-4 md:px-6 max-w-7xl relative z-10">
+          <div className="flex justify-center mb-6">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+              Sample Figures / Demo Benchmarks (Simulated, not live metrics)
+            </span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center items-center justify-center divide-y md:divide-y-0 md:divide-x divide-slate-800/80">
             {/* Stat 1 */}
             <motion.div whileHover={{ y: -2 }} className="pt-4 md:pt-0 px-4 space-y-1.5">
@@ -266,7 +271,7 @@ export default function LandingPage() {
               <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
                 Complaints Resolved
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Citizen verified &amp; closed</p>
+              <p className="text-[11px] text-amber-400/80 font-medium">[Sample Demo Figure]</p>
             </motion.div>
 
             {/* Stat 2 */}
@@ -277,7 +282,7 @@ export default function LandingPage() {
               <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
                 SLA Compliance Rate
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Within Citizens Charter</p>
+              <p className="text-[11px] text-amber-400/80 font-medium">[Target Demo Benchmark]</p>
             </motion.div>
 
             {/* Stat 3 */}
@@ -288,7 +293,7 @@ export default function LandingPage() {
               <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
                 Avg Response Speed
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Fast triage &amp; contractor dispatch</p>
+              <p className="text-[11px] text-amber-400/80 font-medium">[Simulated Target]</p>
             </motion.div>
 
             {/* Stat 4 */}
@@ -299,7 +304,7 @@ export default function LandingPage() {
               <div className="text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider">
                 Under Active Watch
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">Real-time health monitoring</p>
+              <p className="text-[11px] text-amber-400/80 font-medium">[Demo Coverage]</p>
             </motion.div>
           </div>
         </div>
@@ -434,7 +439,7 @@ export default function LandingPage() {
                 <span className="inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-white border border-stone-200 text-slate-700">
                   {cat.sla}
                 </span>
-                <p className="text-[10px] text-slate-500">{cat.count}</p>
+                <p className="text-[10px] text-slate-500">{cat.demoBenchmark}</p>
               </div>
             ))}
           </div>
@@ -493,69 +498,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 6. CITIZEN TESTIMONIALS ── */}
-      <section className="py-20 md:py-24 bg-white border-b border-stone-200">
-        <div className="container mx-auto px-4 md:px-6 max-w-7xl">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
-              Verified Stories from Residents Across India
-            </h2>
-            <p className="text-slate-600 text-xs sm:text-sm">
-              How everyday citizens solved chronic civic issues in their neighborhoods.
-            </p>
-          </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="border border-stone-200 bg-[#FAF8F5] p-6 rounded-3xl space-y-3 shadow-xs">
-              <div className="flex text-amber-400 gap-1 text-sm font-bold">★★★★★</div>
-              <p className="text-slate-700 text-xs sm:text-sm italic leading-relaxed">
-                &ldquo;A deep pothole on our school bus route was ignored for months. Filed on NagarWatch, hit SLA countdown, and the CPWD contractor fixed it within 48 hours!&rdquo;
-              </p>
-              <div className="pt-3 border-t border-stone-200 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-orange-100 text-[#D95D0F] font-black text-xs flex items-center justify-center">
-                  AK
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Ananya Kulkarni</p>
-                  <p className="text-[10px] text-slate-500">Ward 8 Resident (Pune)</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="border border-stone-200 bg-[#FAF8F5] p-6 rounded-3xl space-y-3 shadow-xs">
-              <div className="flex text-amber-400 gap-1 text-sm font-bold">★★★★★</div>
-              <p className="text-slate-700 text-xs sm:text-sm italic leading-relaxed">
-                &ldquo;The Before vs After photo verification card is brilliant. When a contractor marked a drain repair without cleaning silt, I clicked Reopen and got it completed properly.&rdquo;
-              </p>
-              <div className="pt-3 border-t border-stone-200 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-600 font-black text-xs flex items-center justify-center">
-                  RS
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Rahul Sharma</p>
-                  <p className="text-[10px] text-slate-500">Ward 4 Resident (Bengaluru)</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="border border-stone-200 bg-[#FAF8F5] p-6 rounded-3xl space-y-3 shadow-xs">
-              <div className="flex text-amber-400 gap-1 text-sm font-bold">★★★★★</div>
-              <p className="text-slate-700 text-xs sm:text-sm italic leading-relaxed">
-                &ldquo;The RTI generator is a gamechanger. When a pipeline repair dragged past 30 days, the auto-drafted Section 6(1) notice spurred an immediate ward inspection.&rdquo;
-              </p>
-              <div className="pt-3 border-t border-stone-200 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 font-black text-xs flex items-center justify-center">
-                  PD
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Pooja Deshmukh</p>
-                  <p className="text-[10px] text-slate-500">Ward 11 Resident (Mumbai)</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
 
       {/* ── 7. CALL TO ACTION BANNER ── */}
       <section className="py-16 md:py-24 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-slate-900 text-white relative overflow-hidden">
